@@ -21,6 +21,10 @@ if (which === 'android') {
     let m = fs.readFileSync(man, 'utf8');
     if (!m.includes('ACCESS_FINE_LOCATION'))
       m = m.replace('</manifest>', '    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />\n    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />\n    <uses-feature android:name="android.hardware.location.gps" android:required="false" />\n    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />\n</manifest>');
+    // روابط المناسبات fawateh://e/<id> تفتح التطبيق
+    if (!m.includes('android:scheme="fawateh"'))
+      m = m.replace('<category android:name="android.intent.category.LAUNCHER" />\n            </intent-filter>',
+        '<category android:name="android.intent.category.LAUNCHER" />\n            </intent-filter>\n            <intent-filter>\n                <action android:name="android.intent.action.VIEW" />\n                <category android:name="android.intent.category.DEFAULT" />\n                <category android:name="android.intent.category.BROWSABLE" />\n                <data android:scheme="fawateh" />\n            </intent-filter>');
     fs.writeFileSync(man, m);
   }
   // اسم التطبيق بالعربي
@@ -48,6 +52,8 @@ if (which === 'ios') {
       p = p.replace('<dict>', '<dict>\n\t<key>UIFileSharingEnabled</key>\n\t<true/>\n\t<key>LSSupportsOpeningDocumentsInPlace</key>\n\t<true/>');
     if (!p.includes('NSLocationWhenInUseUsageDescription'))
       p = p.replace('<dict>', '<dict>\n\t<key>NSLocationWhenInUseUsageDescription</key>\n\t<string>لتحديد لوكيشن مكان الفاتحة ومشاركته</string>\n\t<key>NSPhotoLibraryAddUsageDescription</key>\n\t<string>لحفظ بطاقة الفاتحة بالصور</string>');
+    if (!p.includes('CFBundleURLSchemes'))
+      p = p.replace('<dict>', '<dict>\n\t<key>CFBundleURLTypes</key>\n\t<array><dict><key>CFBundleURLName</key><string>com.ibraprogram.fawateh</string><key>CFBundleURLSchemes</key><array><string>fawateh</string></array></dict></array>');
     fs.writeFileSync(plist, p);
   }
 }

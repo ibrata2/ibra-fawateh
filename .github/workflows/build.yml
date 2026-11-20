@@ -1,4 +1,4 @@
-name: Build سجل الفواتح IBRA
+name: Build فواتح ومناسبات IBRA
 
 on:
   push:
@@ -7,6 +7,8 @@ on:
 
 permissions:
   contents: write
+  pages: write
+  id-token: write
 
 jobs:
   windows:
@@ -94,12 +96,28 @@ jobs:
       - uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ steps.v.outputs.ver }}
-          name: سجل الفواتح IBRA v${{ steps.v.outputs.ver }}
+          name: فواتح ومناسبات IBRA v${{ steps.v.outputs.ver }}
           body: |
-            **سجل الفواتح IBRA** — تسجيل أهل الفضل والمبالغ ورد الجميل.
+            **فواتح ومناسبات IBRA** — دليل الفواتح والمناسبات، ودفتر الفضل.
             - 🪟 الحاسبة: ملف Setup للتنصيب، أو portable يشتغل بدون تنصيب
             - 🤖 أندرويد: ملف APK
             - 🍎 آيفون: ملف IPA غير موقّع — وقّعه بشهادتك وثبّته
             برمجة وتطوير ابراهيم الخزرجي — https://ibraprogram.netlify.app/
           files: files/*
           make_latest: true
+
+  web:
+    name: Web version (event links)
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/configure-pages@v5
+        with: { enablement: true }
+      - uses: actions/upload-pages-artifact@v3
+        with: { path: www }
+      - id: deploy
+        uses: actions/deploy-pages@v4

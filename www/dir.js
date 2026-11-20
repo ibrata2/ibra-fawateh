@@ -7,18 +7,23 @@ const VERSION=CFG.version||'1.0.0';
 const $=id=>document.getElementById(id);
 
 /* ---------- ثوابت ---------- */
-const KINDS={fatiha:['🕊️','فاتحة'],wedding:['💍','عرس'],tuhur:['🎉','طهور'],engagement:['💐','خطوبة'],birth:['👶','مولود'],hajj:['🕋','رجعة حج/عمرة'],other:['📌','مناسبة']};
-const JOY=k=>k!=='fatiha';
+const KINDS={fatiha:['🕊️','فاتحة'],majlis:['🏴','مجلس حسيني'],memorial:['🕯️','ذكرى / أربعينية'],religious:['🌙','مناسبة دينية'],wedding:['💍','عرس'],tuhur:['🎉','طهور'],engagement:['💐','خطوبة'],birth:['👶','مولود'],hajj:['🕋','رجعة حج/عمرة'],other:['📌','مناسبة']};
+const GROUPS={sorrow:['fatiha','majlis','memorial'],joy:['wedding','tuhur','engagement','birth','hajj'],relig:['majlis','religious']};
+const SORROW=k=>GROUPS.sorrow.includes(k);
+const JOY=k=>GROUPS.joy.includes(k);
+const kcls=k=>JOY(k)?'joy':k==='religious'?'rel':'';
+const WEB=(CFG.webUrl||'https://ibrata2.github.io/ibra-fawateh/').replace(/\/?$/,'/');
+const evLink=id=>WEB+'?e='+id;
 const VENUES={house:['🏠','دار / بيت'],husseiniya:['🕌','حسينية'],mosque:['🕌','جامع'],hall:['🏛️','قاعة'],madhif:['⛺','مضيف'],other:['📍','مكان آخر']};
 const PROVINCES=['بغداد','البصرة','نينوى','أربيل','النجف','كربلاء','بابل','ذي قار','ميسان','واسط','الديوانية','المثنى','الأنبار','ديالى','صلاح الدين','كركوك','السليمانية','دهوك','حلبجة','خارج العراق'];
-const TITLE_LABEL={fatiha:'اسم المرحوم / المرحومة',wedding:'اسم العريس (أو صاحب العرس)',tuhur:'اسم الطفل أو صاحب المناسبة',engagement:'اسم صاحب المناسبة',birth:'اسم المولود أو الأب',hajj:'اسم الحاج / المعتمر',other:'اسم صاحب المناسبة'};
-const TITLE_PH={fatiha:'مثال: المرحوم الحاج علي حسين',wedding:'مثال: عرس حيدر علي',tuhur:'مثال: طهور محمد ابن علي',engagement:'مثال: خطوبة مصطفى',birth:'مثال: مولود أبو حسين',hajj:'مثال: الحاج كاظم جبار',other:'مثال: مناسبة آل فلان'};
+const TITLE_LABEL={fatiha:'اسم المرحوم / المرحومة',majlis:'عنوان المجلس أو صاحبه',memorial:'اسم المرحوم / المرحومة',religious:'اسم المناسبة',wedding:'اسم العريس (أو صاحب العرس)',tuhur:'اسم الطفل أو صاحب المناسبة',engagement:'اسم صاحب المناسبة',birth:'اسم المولود أو الأب',hajj:'اسم الحاج / المعتمر',other:'اسم صاحب المناسبة'};
+const TITLE_PH={fatiha:'مثال: المرحوم الحاج علي حسين',majlis:'مثال: مجلس عزاء الإمام الحسين (ع) — دار الحاج كاظم',memorial:'مثال: أربعينية المرحوم علي حسين',religious:'مثال: مولد الإمام علي (ع)',wedding:'مثال: عرس حيدر علي',tuhur:'مثال: طهور محمد ابن علي',engagement:'مثال: خطوبة مصطفى',birth:'مثال: مولود أبو حسين',hajj:'مثال: الحاج كاظم جبار',other:'مثال: مناسبة آل فلان'};
 
 /* ---------- حالة محلية ---------- */
 function st(){ if(!db.dir) db.dir={}; const d=db.dir;
   d.token=d.token||(uid()+uid()+uid()); d.mine=d.mine||{}; d.seen=d.seen||{}; d.cache=d.cache||[];
   d.notif=d.notif||{on:true,radius:10,province:'',area:'',tribes:[],kinds:'all',lat:null,lng:null};
-  d.filter=d.filter||{q:'',kind:'',province:'',venue:'',sort:'date'}; return d }
+  d.filter=d.filter||{q:'',kind:'',province:'',venue:'',sort:'date'}; d.profile=d.profile||{name:'',phone:''}; d.received=d.received||{}; d.privCache=d.privCache||{}; return d }
 let EVENTS=[], LOADING=false, LAST_ERR='', REMOTE={};
 
 /* ---------- أدوات ---------- */
@@ -57,7 +62,9 @@ async function loadEvents(silent){
   const d=st();
   if(!configured()){EVENTS=[];LAST_ERR='config';renderDir();return}
   if(LOADING)return;LOADING=true;if(!silent)renderDir();
-  try{const rows=await rpc('list_events',{});EVENTS=rows||[];d.cache=EVENTS;d.cacheAt=Date.now();LAST_ERR='';save();checkNotify();}
+  try{const rows=await rpc('list_events',{});EVENTS=rows||[];d.cache=EVENTS;d.cacheAt=Date.now();LAST_ERR='';save();checkNotify();
+    const extra=[...Object.keys(d.mine),...Object.keys(d.received)].filter(id=>!EVENTS.find(e=>e.id===id));
+    for(const id of extra.slice(0,20)){const e=await fetchEv(id);if(!e){delete d.received[id]}}save();}
   catch(e){LAST_ERR=errTxt(e.message);if(!EVENTS.length)EVENTS=d.cache||[]}
   finally{LOADING=false;renderDir()}}
 async function loadConfig(){if(!configured())return;
@@ -67,8 +74,8 @@ async function loadConfig(){if(!configured())return;
 /* ---------- الدليل: الواجهة ---------- */
 function visible(){
   const d=st(),f=d.filter,today=tday(),q=norm(f.q).split(/\s+/).filter(Boolean);
-  let list=EVENTS.filter(e=>String(e.date_to).slice(0,10)>=today);
-  if(f.kind==='joy')list=list.filter(e=>JOY(e.kind));else if(f.kind)list=list.filter(e=>e.kind===f.kind);
+  let list=EVENTS.filter(e=>e.visibility!=='private'&&String(e.date_to).slice(0,10)>=today);
+  if(GROUPS[f.kind])list=list.filter(e=>GROUPS[f.kind].includes(e.kind));else if(f.kind)list=list.filter(e=>e.kind===f.kind);
   if(f.province)list=list.filter(e=>e.province===f.province);
   if(f.venue)list=list.filter(e=>e.venue_type===f.venue);
   if(q.length)list=list.filter(e=>{const h=norm([e.title,e.tribe,e.province,e.area,e.venue,e.note,KINDS[e.kind]?.[1],VENUES[e.venue_type]?.[1]].join(' '));return q.every(w=>h.includes(w))});
@@ -84,17 +91,19 @@ function evCard(e){
   const loc=mapUrl(e);
   return `<div class="ev ${mine?'mine':''}">
    <span class="st ${live?'now':'soon'}">${live?'● اليوم':'قادمة'}</span>
-   <span class="k ${JOY(e.kind)?'joy':''}">${k[0]} ${k[1]}</span>
+   <span class="k ${kcls(e.kind)}">${k[0]} ${k[1]}</span>${e.visibility==='private'?' <span class="k" style="background:var(--card2);color:var(--muted);border-color:var(--line)">🔒 خاصة</span>':''}
    <h3>${esc(e.title)}</h3>
    ${e.tribe?`<div class="m" style="color:var(--gold)">🏷️ ${esc(e.tribe)}</div>`:''}
    <div class="m">📍 ${esc(e.province)}${e.area?' · '+esc(e.area):''}${e._d!=null?` · <b style="color:var(--text)">${e._d<1?Math.round(e._d*1000)+' م':e._d.toFixed(1)+' كم'}</b>`:''}</div>
    ${(v||e.venue)?`<div class="m">${v?v[0]+' '+v[1]:'📍'}${e.venue?' — '+esc(e.venue):''}</div>`:''}
    <div class="m">📅 ${rangeTxt(e)}${e.time_text?' · ⏰ '+esc(e.time_text):''}</div>
    ${e.note?`<div class="m">📝 ${esc(e.note)}</div>`:''}
+   ${e.poster_name?`<div class="m" style="font-size:11px">👤 نشرها: ${esc(e.poster_name)}</div>`:''}
    <div class="actions">
      ${loc?`<button class="btn grn sm" onclick="DIR.open('${esc(loc)}')">🗺️ الموقع</button>`:''}
      ${e.contact?`<a class="btn sec sm" href="tel:${esc(e.contact)}">📞 اتصال</a>`:''}
      <button class="btn sec sm" onclick="DIR.share('${e.id}')">📤 مشاركة</button>
+     ${mine||e.visibility==='private'?`<button class="btn sec sm" onclick="DIR.copyLink('${e.id}')">🔗 الرابط</button>`:''}
      ${mine?`<button class="btn sec sm" onclick="DIR.edit('${e.id}')">✏️ تعديل</button><button class="btn red sm" onclick="DIR.del('${e.id}')">🗑️</button>`
            :`<button class="btn sec sm" onclick="DIR.report('${e.id}')" title="إبلاغ">🚩</button>`}
    </div></div>`}
@@ -106,7 +115,7 @@ function renderDir(){
    ${REMOTE.announcement?`<div class="banner">📢 ${esc(REMOTE.announcement)}</div>`:''}
    <div class="card" style="padding:12px">
      <input class="bigsearch" id="dirQ" placeholder="🔍 ابحث باسم المرحوم، صاحب المناسبة، العشيرة، المنطقة..." value="${esc(f.q)}" oninput="DIR.q(this.value)">
-     <div class="chips" style="margin-top:10px">${chip('','الكل')}${chip('fatiha','🕊️ فواتح')}${chip('joy','🎊 أفراح')}${chip('wedding','💍 أعراس')}${chip('tuhur','🎉 طهور')}${chip('engagement','💐 خطوبة')}${chip('birth','👶 مواليد')}${chip('hajj','🕋 حج')}</div>
+     <div class="chips" style="margin-top:10px">${chip('','الكل')}${chip('sorrow','🕊️ أحزان')}${chip('joy','🎊 أفراح')}${chip('majlis','🏴 مجالس حسينية')}${chip('relig','🌙 دينية')}${chip('fatiha','فواتح')}${chip('memorial','🕯️ أربعينيات')}${chip('wedding','💍 أعراس')}${chip('tuhur','🎉 طهور')}${chip('engagement','💐 خطوبة')}${chip('birth','👶 مواليد')}${chip('hajj','🕋 حج')}</div>
      <div class="row" style="margin-top:8px;gap:6px">
        <select onchange="DIR.setF('province',this.value)" style="min-width:110px"><option value="">كل المحافظات</option>${PROVINCES.map(p=>`<option ${f.province===p?'selected':''}>${p}</option>`).join('')}</select>
        <select onchange="DIR.setF('venue',this.value)" style="min-width:110px"><option value="">كل الأماكن</option>${Object.entries(VENUES).map(([k,v])=>`<option value="${k}" ${f.venue===k?'selected':''}>${v[0]} ${v[1]}</option>`).join('')}</select>
@@ -118,11 +127,25 @@ function renderDir(){
    </div>
    <div style="display:flex;justify-content:space-between;align-items:center;margin:4px 2px 8px;font-size:12px;color:var(--muted)">
      <span>${LOADING?'⏳ جاري التحديث...':`${list.length} مناسبة`}${d.cacheAt&&!LOADING?' · آخر تحديث '+new Date(d.cacheAt).toLocaleTimeString('ar-IQ',{hour:'2-digit',minute:'2-digit'}):''}</span>
-     <button class="btn sec sm" onclick="DIR.reload()">🔄 تحديث</button>
+     <span><button class="btn sec sm" onclick="DIR.openLinkBox()">🔗 فتح رابط</button> <button class="btn sec sm" onclick="DIR.reload()">🔄 تحديث</button></span>
    </div>
    ${LAST_ERR==='config'?`<div class="banner">⚙️ الدليل العام قيد التجهيز. دفتر الفضل يشتغل عادي.</div>`:LAST_ERR?`<div class="banner">⚠️ ${esc(LAST_ERR)}${EVENTS.length?' — تعرض آخر نسخة محفوظة':''}</div>`:''}
+   ${receivedHtml()}
    ${list.length?list.map(evCard).join(''):`<div class="empty">${LOADING?'':(f.q||f.kind||f.province||f.venue)?'ما لكينا نتائج — جرّب كلمة ثانية أو شيل الفلاتر':'ما اكو مناسبات منشورة حالياً.<br><br><button class="btn" onclick="go(\'post\')">📢 انشر أول مناسبة</button>'}</div>`}`;
   const qi=$('dirQ');if(qi&&DIR._focus){qi.focus();qi.setSelectionRange(qi.value.length,qi.value.length)}}
+
+function receivedHtml(){const d=st(),today=tday();
+  const rec=Object.keys(d.received).map(id=>d.privCache[id]).filter(e=>e&&String(e.date_to).slice(0,10)>=today&&!EVENTS.find(x=>x.id===e.id));
+  return rec.length?`<h2 style="font-size:15px">🔗 مناسبات وصلتني بالرابط</h2>${rec.map(evCard).join('')}<h2 style="font-size:15px;margin-top:6px">🌍 الدليل العام</h2>`:''}
+async function fetchEv(id){try{const r=await rpc('get_event',{p_id:id});const e=Array.isArray(r)?r[0]:r;if(e){st().privCache[id]=e;save()}return e||null}catch(e){return st().privCache[id]||null}}
+async function openById(id){if(!/^[0-9a-f-]{36}$/i.test(id))return;
+  go('dir');toast('جاري فتح المناسبة...');const e=await fetchEv(id);
+  if(!e)return showSheet('المناسبة غير موجودة','<p style="color:var(--muted);padding:10px">يمكن انتهت أو انحذفت من صاحبها.</p>');
+  const d=st();if(!d.mine[id]){d.received[id]=Date.now();save()}
+  const inApp=isNative||/Electron/i.test(navigator.userAgent);
+  showSheet((KINDS[e.kind]||KINDS.other)[1],evCard(e)+(inApp?'':`<div class="banner" style="margin-top:8px">📲 حمّل تطبيق <b>فواتح ومناسبات</b> حتى توصلك المناسبات وتحفظ دفتر الفضل
+    <div class="actions"><a class="btn sm" href="fawateh://e/${id}">فتح بالتطبيق</a><a class="btn sec sm" href="${esc(appLink())}" target="_blank">⬇️ تحميل التطبيق</a></div></div>`));renderDir()}
+function idFromUrl(u){const m=String(u||'').match(/[?&]e=([0-9a-f-]{36})/i)||String(u||'').match(/\/e\/([0-9a-f-]{36})/i);return m?m[1]:null}
 
 /* ---------- النشر ---------- */
 let EDIT_ID=null;
@@ -132,6 +155,13 @@ function renderPost(e){
    <div class="card">
      <h2>${EDIT_ID?'✏️ تعديل المناسبة':'📢 نشر مناسبة بالدليل العام'}</h2>
      <p style="font-size:12px;color:var(--muted);margin-bottom:10px">يشوفها كل مستخدمين التطبيق، وتختفي تلقائياً بعد انتهاء موعدها.</p>
+     <div class="mb"><label>من يشوف المناسبة؟</label>
+       <div class="seg" id="pkVisSeg"><button type="button" class="${(e.visibility||'public')==='public'?'on':''}" onclick="DIR.vis('public')">🌍 عامة بالدليل</button><button type="button" class="${e.visibility==='private'?'on':''}" onclick="DIR.vis('private')">🔒 خاصة بالرابط</button></div>
+       <input type="hidden" id="pkVis" value="${e.visibility||'public'}">
+       <small id="pkVisHint" style="color:var(--muted);font-size:11px;display:block;margin-top:4px">${e.visibility==='private'?'ما تظهر بالدليل. بعد النشر ترسل رابطها بس للناس اللي تريدهم.':'تظهر لكل المستخدمين بالبحث، وتوصل إشعاراتها للقريبين.'}</small></div>
+     <div class="mb" id="pkReachBox" style="${e.visibility==='private'?'display:none':''}"><label>توصل إشعاراتها للي ساكنين ضمن</label>
+       <select id="pkReach">${[['2','2 كم (نفس المنطقة)'],['5','5 كم'],['10','10 كم'],['25','25 كم'],['50','50 كم (المحافظة)'],['','بدون حد']].map(([v,l])=>`<option value="${v}" ${String(e.reach_km??'10')===v?'selected':''}>${l}</option>`).join('')}</select>
+       <small style="color:var(--muted);font-size:11px">والمتلقي هم يحدد مسافته، فالإشعار يوصل للي ضمن المسافتين. البحث بالاسم يلكاها أي شخص.</small></div>
      <div class="mb"><label>نوع المناسبة</label><div class="chips" id="pkChips">${Object.entries(KINDS).map(([k,v])=>`<button type="button" class="chip ${k===kind?'on':''}" data-k="${k}" onclick="DIR.pk('${k}')">${v[0]} ${v[1]}</button>`).join('')}</div></div>
      <input type="hidden" id="pkKind" value="${kind}">
      <div class="mb"><label id="pkTitleL">${TITLE_LABEL[kind]} *</label><input id="pkTitle" maxlength="120" placeholder="${TITLE_PH[kind]}" value="${esc(e.title||'')}"></div>
@@ -141,7 +171,7 @@ function renderPost(e){
        <div><label>المنطقة</label><input id="pkArea" maxlength="80" placeholder="مثال: بغداد الجديدة" value="${esc(e.area||'')}"></div>
      </div>
      <div class="row mb">
-       <div><label>نوع المكان</label><select id="pkVT">${Object.entries(VENUES).map(([k,v])=>`<option value="${k}" ${(e.venue_type||(kind==='fatiha'?'husseiniya':'hall'))===k?'selected':''}>${v[0]} ${v[1]}</option>`).join('')}</select></div>
+       <div><label>نوع المكان</label><select id="pkVT">${Object.entries(VENUES).map(([k,v])=>`<option value="${k}" ${(e.venue_type||(SORROW(kind)?'husseiniya':'hall'))===k?'selected':''}>${v[0]} ${v[1]}</option>`).join('')}</select></div>
        <div><label>اسم المكان</label><input id="pkVenue" maxlength="120" placeholder="مثال: حسينية الزهراء" value="${esc(e.venue||'')}"></div>
      </div>
      <div class="row mb">
@@ -153,14 +183,17 @@ function renderPost(e){
        <div style="display:flex;gap:6px"><input id="pkLoc" inputmode="url" style="flex:1" placeholder="الصق رابط كوكل ماب أو اضغط موقعي" value="${esc(e.lat!=null?e.lat+','+e.lng:(e.loc_url||''))}">
        <button type="button" class="btn sec" onclick="DIR.myLoc()" style="white-space:nowrap">📍 موقعي</button></div>
        <small style="color:var(--muted);font-size:11px">اللوكيشن يخلي الناس توصل بسهولة، وتوصلهم إشعارات إذا قريبين.</small></div>
-     <div class="mb"><label>رقم للتواصل (اختياري)</label><input id="pkContact" type="tel" inputmode="tel" maxlength="20" placeholder="07xxxxxxxxx" value="${esc(e.contact||'')}"></div>
+     <div class="row mb">
+       <div><label>اسم الناشر *</label><input id="pkPoster" maxlength="60" placeholder="اسمك (عربي أو English)" value="${esc(e.poster_name||st().profile.name||'')}"></div>
+       <div><label>رقم للتواصل (اختياري)</label><input id="pkContact" type="tel" inputmode="tel" maxlength="20" placeholder="07xxxxxxxxx" value="${esc(e.contact||(EDIT_ID?'':st().profile.phone)||'')}"></div>
+     </div>
      <div class="mb"><label>ملاحظة (اختياري)</label><textarea id="pkNote" maxlength="400" placeholder="مثال: الفاتحة للرجال والنساء">${esc(e.note||'')}</textarea></div>
      ${EDIT_ID?'':`<label style="display:flex;gap:8px;align-items:center;margin-bottom:12px;color:var(--text);font-size:14px"><input type="checkbox" id="pkLedger" style="width:auto"> أنشئ لها سجل بدفتر الفضل مالتي</label>`}
      <div class="actions"><button class="btn" id="pkBtn" onclick="DIR.submit()">${EDIT_ID?'💾 حفظ التعديل':'📢 نشر'}</button>${EDIT_ID?`<button class="btn sec" onclick="DIR.cancelEdit()">إلغاء</button>`:''}</div>
      <p style="font-size:11px;color:var(--muted);margin-top:10px">بالنشر تتعهد إن المعلومات صحيحة. المنشورات الكاذبة تنحذف بعد بلاغات المستخدمين.</p>
    </div>
    ${myPostsHtml()}`}
-function myPostsHtml(){const d=st();const mine=EVENTS.filter(e=>d.mine[e.id]);
+function myPostsHtml(){const d=st();const mine=Object.keys(d.mine).map(id=>EVENTS.find(e=>e.id===id)||d.privCache[id]).filter(Boolean);
   return mine.length?`<h2>📌 منشوراتي</h2>${mine.map(evCard).join('')}`:''}
 async function submit(){
   const v=id=>$(id).value.trim();const title=v('pkTitle');
@@ -171,18 +204,20 @@ async function submit(){
   const locRaw=v('pkLoc'),ll=parseLoc(locRaw);
   const p={kind:v('pkKind'),title,tribe:v('pkTribe'),province:v('pkProv'),area:v('pkArea'),venue_type:v('pkVT'),venue:v('pkVenue'),
     date_from:from,date_to:to||from,time_text:v('pkTime'),lat:ll?String(ll.lat):'',lng:ll?String(ll.lng):'',loc_url:ll?'':(/^https?:\/\//i.test(locRaw)?locRaw:''),
-    note:v('pkNote'),contact:v('pkContact')};
+    note:v('pkNote'),contact:v('pkContact'),visibility:v('pkVis'),reach_km:v('pkVis')==='public'?v('pkReach'):'',poster_name:v('pkPoster')};
+  if(p.poster_name.length<2)return toast('اكتب اسم الناشر');
+  const pr=st().profile;if(!pr.name){pr.name=p.poster_name;if(!pr.phone&&p.contact)pr.phone=p.contact}
   const btn=$('pkBtn');btn.disabled=true;btn.textContent='⏳ جاري الإرسال...';
   const d=st();
   try{
-    if(EDIT_ID){const ok=await rpc('update_event',{p_id:EDIT_ID,p,p_token:d.token});if(!ok)throw new Error('ما تكدر تعدّل هذا المنشور');toast('تم حفظ التعديل ✔');EDIT_ID=null}
+    if(EDIT_ID){const ok=await rpc('update_event',{p_id:EDIT_ID,p,p_token:d.token});if(!ok)throw new Error('ما تكدر تعدّل هذا المنشور');toast('تم حفظ التعديل ✔');await fetchEv(EDIT_ID);EDIT_ID=null}
     else{const id=await rpc('add_event',{p,p_token:d.token});d.mine[id]=Date.now();d.seen[id]=1;
       if($('pkLedger')?.checked){const le={id:uid(),name:(p.kind==='fatiha'?'':KINDS[p.kind][1]+' ')+title,tribe:p.tribe,from,to:to,date:from,place:[VENUES[p.venue_type]?.[1],p.venue,p.area].filter(Boolean).join(' - '),time:p.time_text,loc:ll?`https://maps.google.com/?q=${ll.lat},${ll.lng}`:p.loc_url,note:p.note};db.events.unshift(le);db.cur=le.id}
-      d.postsCount=(d.postsCount||0)+1;save();toast('تم النشر ✔');
+      d.postsCount=(d.postsCount||0)+1;save();toast(p.visibility==='private'?'تم النشر ✔ أرسل الرابط للناس اللي تريدهم':'تم النشر ✔');await fetchEv(id);
       await loadEvents(true);renderPost();go('dir');setTimeout(()=>{share(id);maybeSupport()},300);return}
     save();await loadEvents(true);renderPost();go('dir')
   }catch(e){toast(errTxt(e.message))}finally{if($('pkBtn')){btn.disabled=false;btn.textContent=EDIT_ID?'💾 حفظ التعديل':'📢 نشر'}}}
-function editEv(id){const e=EVENTS.find(x=>x.id===id);if(!e)return;EDIT_ID=id;go('post');renderPost(e)}
+function editEv(id){const e=EVENTS.find(x=>x.id===id)||st().privCache[id];if(!e)return;EDIT_ID=id;go('post');renderPost(e)}
 async function delEv(id){if(!confirm('حذف المنشور من الدليل العام؟'))return;
   try{const ok=await rpc('delete_event',{p_id:id,p_token:st().token});if(ok){delete st().mine[id];save();toast('تم الحذف');loadEvents(true);renderPost()}else toast('ما تكدر تحذف هذا المنشور')}catch(e){toast(errTxt(e.message))}}
 async function report(id){const r=prompt('سبب الإبلاغ (مثلاً: معلومات كاذبة، إزعاج، مكرر):','معلومات غير صحيحة');if(r===null)return;
@@ -191,19 +226,19 @@ async function myLoc(){toast('جاري تحديد موقعك...');try{const p=aw
   catch(e){toast(e.code===1?'اسمح للتطبيق باستخدام الموقع من الإعدادات':'تعذّر تحديد الموقع — الصق رابط كوكل ماب')}}
 
 /* ---------- المشاركة ---------- */
-function share(id){const e=EVENTS.find(x=>x.id===id);if(!e)return;
+function share(id){const e=EVENTS.find(x=>x.id===id)||st().privCache[id];if(!e)return;
   const k=KINDS[e.kind]||KINDS.other,v=VENUES[e.venue_type],loc=mapUrl(e);
-  const L=[];if(e.kind==='fatiha'){L.push('إنا لله وإنا إليه راجعون');L.push('')}
+  const L=[];if(SORROW(e.kind)&&e.kind!=='majlis'){L.push('إنا لله وإنا إليه راجعون');L.push('')}
   L.push(`${k[0]} ${e.kind==='fatiha'?'فاتحة ':k[1]+' · '}${e.title}`);
   if(e.tribe)L.push(`🏷️ ${e.tribe}`);
   L.push(`📍 ${e.province}${e.area?' - '+e.area:''}`);
   if(v||e.venue)L.push(`${v?v[0]+' '+v[1]:'📍'}${e.venue?': '+e.venue:''}`);
   L.push(`📅 ${rangeTxt(e)}`);if(e.time_text)L.push(`⏰ ${e.time_text}`);
   if(loc)L.push(`🗺️ الموقع: ${loc}`);if(e.contact)L.push(`📞 ${e.contact}`);if(e.note){L.push('');L.push(e.note)}
-  L.push('');L.push('📲 تطبيق فواتح ومناسبات IBRA — دليل الفواتح والمناسبات:');L.push(appLink());
+  L.push('');L.push('🔗 التفاصيل والموقع: '+evLink(e.id));L.push('');L.push('📲 تطبيق فواتح ومناسبات IBRA:');L.push(appLink());
   shareText.value=L.join('\n');
   shareEv={name:e.title,tribe:e.tribe,from:String(e.date_from).slice(0,10),to:String(e.date_to).slice(0,10),time:e.time_text,place:[v?.[1],e.venue,e.area,e.province].filter(Boolean).join(' - '),loc,note:e.note,
-    cardTitle:(e.kind==='fatiha'?'فاتحة ':k[1]+' ')+e.title,cardTop:e.kind==='fatiha'?'إنا لله وإنا إليه راجعون':'ألف مبروك 🎊'};
+    cardTitle:(e.kind==='fatiha'?'فاتحة ':k[1]+' ')+e.title,cardTop:SORROW(e.kind)&&e.kind!=='majlis'?'إنا لله وإنا إليه راجعون':e.kind==='majlis'||e.kind==='religious'?'السلام على الحسين وعلى أولاد الحسين':'ألف مبروك 🎊'};
   $('mShare').classList.add('on')}
 
 /* ---------- الإشعارات ---------- */
@@ -219,8 +254,11 @@ async function notify(list){
   if(LN()){try{await LN().schedule({notifications:items.map((e,i)=>({id:Math.floor(Math.random()*2e9),title:items.length>1&&i===0&&list.length>5?`${list.length} مناسبات جديدة قريبة منك`:'مناسبة جديدة قريبة منك',body:body(e),extra:{id:e.id},smallIcon:'ic_stat_notify',iconColor:'#D4AF37'}))})}catch(e){}return}
   if('Notification' in window&&Notification.permission==='granted'){items.forEach(e=>{try{const n=new Notification('فواتح ومناسبات — مناسبة جديدة',{body:body(e),icon:'icon.png',tag:e.id});n.onclick=()=>{window.focus();go('dir')}}catch(_){}})}}
 function matches(e){const n=st().notif;
-  if(n.kinds==='fatiha'&&e.kind!=='fatiha')return false;if(n.kinds==='joy'&&e.kind==='fatiha')return false;
-  if(n.lat!=null&&e.lat!=null&&dist(n.lat,n.lng,e.lat,e.lng)<=(+n.radius||10))return true;
+  if(n.kinds==='fatiha'&&!SORROW(e.kind))return false;if(n.kinds==='joy'&&!JOY(e.kind))return false;if(n.kinds==='relig'&&!GROUPS.relig.includes(e.kind))return false;
+  if(e.visibility==='private')return false;
+  const dd=(n.lat!=null&&e.lat!=null)?dist(n.lat,n.lng,e.lat,e.lng):null;
+  if(dd!=null&&e.reach_km&&dd>e.reach_km)return false;
+  if(dd!=null&&dd<=(+n.radius||10))return true;
   if(n.province&&e.province===n.province){if(!n.area)return true;const a=norm(n.area);return norm(e.area).includes(a)||norm(e.venue).includes(a)}
   if(n.tribes&&n.tribes.length&&e.tribe){const t=norm(e.tribe);if(n.tribes.some(x=>{x=norm(x).replace(/^ال\s*/,'');return x&&t.includes(x)}))return true}
   return false}
@@ -250,12 +288,17 @@ window.openUpdate=function(){if(!UPD)return checkUpdate(true);
 /* ---------- الإعدادات ---------- */
 function renderSettings(){const root=$('setRoot');if(!root)return;const n=st().notif;
   const tg=(on,fn)=>`<div class="tgl ${on?'on':''}" onclick="${fn}"></div>`;
+  const pr=st().profile;
   root.innerHTML=`
+   <div class="card"><h2>👤 حسابي</h2>
+     <div class="row mb"><div><label>الاسم (عربي أو English)</label><input value="${esc(pr.name)}" maxlength="60" placeholder="مثال: ابراهيم الخزرجي" onchange="DIR.prof('name',this.value.trim())"></div>
+     <div><label>رقم الموبايل</label><input type="tel" inputmode="tel" value="${esc(pr.phone)}" maxlength="20" placeholder="07xxxxxxxxx" onchange="DIR.prof('phone',this.value.trim())"></div></div>
+     <p style="font-size:11px;color:var(--muted)">يطلع اسمك كناشر للمناسبات، والرقم يتعبّى تلقائياً للتواصل. محفوظين بجهازك.</p></div>
    ${UPD?`<div class="banner">⬆️ إصدار جديد ${esc(UPD.ver)} متوفر <button class="btn sm" onclick="openUpdate()">تحديث</button></div>`:''}
    <div class="card"><h2>🔔 إشعارات المناسبات</h2>
      <div class="sw"><span>تفعيل الإشعارات</span>${tg(n.on,'DIR.ntog()')}</div>
      <div class="sw"><span>نوع المناسبات</span><select style="width:auto" onchange="DIR.nset('kinds',this.value)">
-        <option value="all" ${n.kinds==='all'?'selected':''}>الكل</option><option value="fatiha" ${n.kinds==='fatiha'?'selected':''}>فواتح فقط</option><option value="joy" ${n.kinds==='joy'?'selected':''}>أفراح فقط</option></select></div>
+        <option value="all" ${n.kinds==='all'?'selected':''}>الكل</option><option value="fatiha" ${n.kinds==='fatiha'?'selected':''}>أحزان فقط</option><option value="joy" ${n.kinds==='joy'?'selected':''}>أفراح فقط</option><option value="relig" ${n.kinds==='relig'?'selected':''}>مجالس ودينية</option></select></div>
      <div class="sw"><span>📍 القريبة مني ضمن</span><select style="width:auto" onchange="DIR.nset('radius',+this.value)">${[3,5,10,20,50].map(r=>`<option value="${r}" ${+n.radius===r?'selected':''}>${r} كم</option>`).join('')}</select></div>
      <div class="sw"><span style="font-size:13px">${n.lat!=null?'✅ موقعك محفوظ':'⚠️ موقعك غير محدد'}</span><button class="btn sec sm" onclick="DIR.myPos()">📍 حدّث موقعي</button></div>
      <div class="sw"><span>🏙️ محافظتي</span><select style="width:auto" onchange="DIR.nset('province',this.value)"><option value="">—</option>${PROVINCES.map(p=>`<option ${n.province===p?'selected':''}>${p}</option>`).join('')}</select></div>
@@ -305,7 +348,8 @@ function showSheet(title,html){let m=$('mGen');if(!m){m=document.createElement('
 /* ---------- شاشات الترحيب ---------- */
 const SLIDES=[
  ['فواتح ومناسبات','أهلاً بيك 🤍 تطبيق واحد يخدمك بشغلتين:<br><b>🔍 دليل الواجب</b> و<b>📒 دفتر الفضل</b>'],
- ['🔍 دليل الواجب','ابحث عن أي فاتحة أو عرس أو مناسبة باسم صاحبها أو العشيرة أو المنطقة، وشوف المكان والموعد واللوكيشن، حتى لو مو من منطقتك. وانشر مناسبتك حتى توصل للناس.'],
+ ['🔍 دليل الواجب','ابحث عن أي فاتحة أو مجلس حسيني أو عرس أو مناسبة دينية، باسم صاحبها أو العشيرة أو المنطقة، وشوف المكان والموعد واللوكيشن حتى لو مو من منطقتك.'],
+ ['📢 انشر مناسبتك','<b>🌍 عامة</b>: تظهر بالدليل وتوصل إشعاراتها للقريبين ضمن المسافة اللي تحددها.<br><b>🔒 خاصة</b>: ما تظهر لأحد، ترسل رابطها بس للناس اللي تريدهم.'],
  ['🔔 لا يفوتك واجب','يوصلك إشعار بالمناسبات القريبة منك، أو بمحافظتك، أو لعشيرتك اللي تتابعها.'],
  ['📒 دفتر الفضل','سجّل كل من وقف وياك: الاسم والرقم والمبلغ و"قريب فلان". يبقى <b>بجهازك فقط</b>، وتطبعه أو تنقله لجهاز ثاني، حتى ترد الجميل بوقته.']];
 function onb(i){const o=$('onb');if(i>=SLIDES.length){o.classList.remove('on');st().onb=1;save();if(!st().notif.province)go('settings');return}
@@ -318,7 +362,7 @@ let qT=null;
 window.DIR={
   open:u=>openLink(u),share,edit:editEv,del:delEv,report,myLoc,submit,
   cancelEdit:()=>{EDIT_ID=null;renderPost()},
-  pk:k=>{$('pkKind').value=k;document.querySelectorAll('#pkChips .chip').forEach(c=>c.classList.toggle('on',c.dataset.k===k));$('pkTitleL').textContent=TITLE_LABEL[k]+' *';$('pkTitle').placeholder=TITLE_PH[k];$('pkVT').value=k==='fatiha'?'husseiniya':'hall'},
+  pk:k=>{$('pkKind').value=k;document.querySelectorAll('#pkChips .chip').forEach(c=>c.classList.toggle('on',c.dataset.k===k));$('pkTitleL').textContent=TITLE_LABEL[k]+' *';$('pkTitle').placeholder=TITLE_PH[k];$('pkVT').value=(SORROW(k)||k==='religious')?(k==='religious'?'mosque':'husseiniya'):'hall'},
   q:v=>{st().filter.q=v;clearTimeout(qT);qT=setTimeout(()=>{DIR._focus=true;renderDir();DIR._focus=false},200)},
   setF:(k,v)=>{st().filter[k]=v;save();renderDir()},
   sort:async v=>{st().filter.sort=v;save();if(v==='near'&&st().notif.lat==null)await refreshMyLoc();renderDir()},
@@ -327,7 +371,12 @@ window.DIR={
   nset:(k,v)=>{st().notif[k]=v;save();renderSettings()},
   myPos:()=>refreshMyLoc(),
   testN:async()=>{if(!(await notifPerm()))return toast('اسمح للتطبيق بالإشعارات من إعدادات الجهاز');notify([{id:'t',kind:'fatiha',title:'تجربة إشعار',province:st().notif.province||'بغداد',date_from:tday(),date_to:tday()}]);toast('أرسلت إشعار تجربة')},
-  upd:()=>checkUpdate(true),support,onb,adSave,adAct
+  upd:()=>checkUpdate(true),support,onb,adSave,adAct,
+  vis:v=>{$('pkVis').value=v;document.querySelectorAll('#pkVisSeg button').forEach((b,i)=>b.classList.toggle('on',(i===0)===(v==='public')));$('pkReachBox').style.display=v==='public'?'':'none';
+    $('pkVisHint').textContent=v==='private'?'ما تظهر بالدليل. بعد النشر ترسل رابطها بس للناس اللي تريدهم.':'تظهر لكل المستخدمين بالبحث، وتوصل إشعاراتها للقريبين.'},
+  prof:(k,v)=>{st().profile[k]=v;save();toast('تم الحفظ ✔')},
+  openLinkBox:()=>{const u=prompt('الصق رابط المناسبة:');const id=idFromUrl(u)||(u&&u.trim());if(id)openById(id)},
+  copyLink:id=>copyText(evLink(id)).then(()=>toast('تم نسخ الرابط ✔'))
 };
 window.onTab=t=>{if(t==='dir')renderDir();if(t==='post'&&!EDIT_ID)renderPost();if(t==='settings')renderSettings()};
 
@@ -335,11 +384,13 @@ window.onTab=t=>{if(t==='dir')renderDir();if(t==='post'&&!EDIT_ID)renderPost();i
 function boot(){const d=st();EVENTS=d.cache||[];REMOTE=d.remote||{};window.REMOTE_LINK=REMOTE.download_link||'';
   renderDir();renderPost();renderSettings();
   loadEvents(true);loadConfig();setTimeout(()=>checkUpdate(false),3000);
-  if(!d.onb)onb(0);
+  if(!d.onb&&!idFromUrl(location.href))onb(0);
   if(d.notif.on){setTimeout(notifPerm,4000);if(d.notif.lat!=null&&Date.now()-(d.notif.locAt||0)>3600e3)setTimeout(()=>refreshMyLoc(true),6000)}
   setInterval(()=>loadEvents(true),10*60*1000);
   document.addEventListener('visibilitychange',()=>{if(!document.hidden&&Date.now()-(st().cacheAt||0)>60000)loadEvents(true)});
   if(isNative&&Plug('App'))Plug('App').addListener('resume',()=>loadEvents(true));
-  if(LN())LN().addListener('localNotificationActionPerformed',()=>go('dir'))}
+  if(LN())LN().addListener('localNotificationActionPerformed',()=>go('dir'));
+  const eid=idFromUrl(location.href);if(eid)setTimeout(()=>openById(eid),600);
+  if(isNative&&Plug('App'))Plug('App').addListener('appUrlOpen',ev=>{const id=idFromUrl(ev&&ev.url);if(id)openById(id)})}
 boot();
 })();
