@@ -100,7 +100,7 @@ function evCard(e){
    ${e.note?`<div class="m">📝 ${esc(e.note)}</div>`:''}
    ${e.poster_name?`<div class="m" style="font-size:11px">👤 نشرها: ${esc(e.poster_name)}</div>`:''}
    <div class="actions">
-     ${loc?`<button class="btn grn sm" onclick="DIR.open('${esc(loc)}')">🗺️ الموقع</button>`:''}
+     ${e.lat!=null?`<button class="btn grn sm" onclick="DIR.viewMap('${e.id}')">🗺️ الموقع</button>`:loc?`<button class="btn grn sm" onclick="DIR.open('${esc(loc)}')">🗺️ الموقع</button>`:''}
      ${e.contact?`<a class="btn sec sm" href="tel:${esc(e.contact)}">📞 اتصال</a>`:''}
      <button class="btn sec sm" onclick="DIR.share('${e.id}')">📤 مشاركة</button>
      ${mine||e.visibility==='private'?`<button class="btn sec sm" onclick="DIR.copyLink('${e.id}')">🔗 الرابط</button>`:''}
@@ -127,7 +127,7 @@ function renderDir(){
    </div>
    <div style="display:flex;justify-content:space-between;align-items:center;margin:4px 2px 8px;font-size:12px;color:var(--muted)">
      <span>${LOADING?'⏳ جاري التحديث...':`${list.length} مناسبة`}${d.cacheAt&&!LOADING?' · آخر تحديث '+new Date(d.cacheAt).toLocaleTimeString('ar-IQ',{hour:'2-digit',minute:'2-digit'}):''}</span>
-     <span><button class="btn sec sm" onclick="DIR.openLinkBox()">🔗 فتح رابط</button> <button class="btn sec sm" onclick="DIR.reload()">🔄 تحديث</button></span>
+     <span><button class="btn sec sm" onclick="DIR.mapAll()">🗺️ خريطة</button> <button class="btn sec sm" onclick="DIR.openLinkBox()">🔗 فتح رابط</button> <button class="btn sec sm" onclick="DIR.reload()">🔄 تحديث</button></span>
    </div>
    ${LAST_ERR==='config'?`<div class="banner">⚙️ الدليل العام قيد التجهيز. دفتر الفضل يشتغل عادي.</div>`:LAST_ERR?`<div class="banner">⚠️ ${esc(LAST_ERR)}${EVENTS.length?' — تعرض آخر نسخة محفوظة':''}</div>`:''}
    ${receivedHtml()}
@@ -182,7 +182,8 @@ function renderPost(e){
      <div class="mb"><label>لوكيشن المكان</label>
        <div style="display:flex;gap:6px"><input id="pkLoc" inputmode="url" style="flex:1" placeholder="الصق رابط كوكل ماب أو اضغط موقعي" value="${esc(e.lat!=null?e.lat+','+e.lng:(e.loc_url||''))}">
        <button type="button" class="btn sec" onclick="DIR.myLoc()" style="white-space:nowrap">📍 موقعي</button></div>
-       <small style="color:var(--muted);font-size:11px">اللوكيشن يخلي الناس توصل بسهولة، وتوصلهم إشعارات إذا قريبين.</small></div>
+       <button type="button" class="btn grn" onclick="DIR.mapPick()" style="width:100%;margin-top:6px">🗺️ اختار المكان من الخريطة</button>
+       <small style="color:var(--muted);font-size:11px">حرّك الخريطة وحط الدبوس على المكان بالضبط، أو اضغط موقعي إذا أنت هناك. اللوكيشن يوصل الناس ويوصلهم الإشعارات.</small></div>
      <div class="row mb">
        <div><label>اسم الناشر *</label><input id="pkPoster" maxlength="60" placeholder="اسمك (عربي أو English)" value="${esc(e.poster_name||st().profile.name||'')}"></div>
        <div><label>رقم للتواصل (اختياري)</label><input id="pkContact" type="tel" inputmode="tel" maxlength="20" placeholder="07xxxxxxxxx" value="${esc(e.contact||(EDIT_ID?'':st().profile.phone)||'')}"></div>
@@ -376,8 +377,14 @@ window.DIR={
     $('pkVisHint').textContent=v==='private'?'ما تظهر بالدليل. بعد النشر ترسل رابطها بس للناس اللي تريدهم.':'تظهر لكل المستخدمين بالبحث، وتوصل إشعاراتها للقريبين.'},
   prof:(k,v)=>{st().profile[k]=v;save();toast('تم الحفظ ✔')},
   openLinkBox:()=>{const u=prompt('الصق رابط المناسبة:');const id=idFromUrl(u)||(u&&u.trim());if(id)openById(id)},
-  copyLink:id=>copyText(evLink(id)).then(()=>toast('تم نسخ الرابط ✔'))
+  copyLink:id=>copyText(evLink(id)).then(()=>toast('تم نسخ الرابط ✔')),
+  mapPick:()=>MapPick.pick($('pkLoc').value,(a,b)=>{$('pkLoc').value=a+','+b;toast('تم تحديد المكان ✔')}),
+  viewMap:id=>{const e=EVENTS.find(x=>x.id===id)||st().privCache[id];if(!e)return;MapPick.view(e.lat,e.lng,(KINDS[e.kind]||KINDS.other)[1]+' — '+e.title,popHtml(e))},
+  mapAll:()=>MapPick.many(visible().map(e=>({lat:e.lat,lng:e.lng,emoji:(KINDS[e.kind]||KINDS.other)[0],html:popHtml(e)})),'خريطة المناسبات ('+visible().filter(e=>e.lat!=null).length+')')
 };
+function popHtml(e){const k=KINDS[e.kind]||KINDS.other,v=VENUES[e.venue_type];
+  return `<div class="mpEv"><b>${k[0]} ${esc(e.title)}</b>${e.tribe?`<small>${esc(e.tribe)}</small><br>`:''}<small>${v?v[1]:''}${e.venue?' — '+esc(e.venue):''}</small><br><small>📅 ${rangeTxt(e)}${e.time_text?' · '+esc(e.time_text):''}</small><br>
+   <a href="https://www.google.com/maps/dir/?api=1&destination=${e.lat},${e.lng}" target="_blank" style="display:inline-block;margin-top:6px;background:#3fae7a;color:#fff;padding:4px 10px;border-radius:8px;text-decoration:none;font-weight:700">🧭 الاتجاهات</a></div>`}
 window.onTab=t=>{if(t==='dir')renderDir();if(t==='post'&&!EDIT_ID)renderPost();if(t==='settings')renderSettings()};
 
 /* ---------- تشغيل ---------- */

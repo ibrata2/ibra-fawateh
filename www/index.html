@@ -285,7 +285,7 @@ a.link{color:var(--gold)}
     <div class="mb"><label>الوقت (اختياري)</label><input id="eTime" placeholder="مثال: من العصر إلى المغرب"></div>
     <div class="mb"><label>لوكيشن المكان (رابط خرائط)</label>
       <div style="display:flex;gap:6px"><input id="eLoc" placeholder="الصق رابط كوكل ماب أو اضغط موقعي" style="flex:1" inputmode="url">
-      <button class="btn sec" type="button" onclick="myLocation()" style="white-space:nowrap">📍 موقعي</button></div>
+      <button class="btn sec" type="button" onclick="myLocation()" style="white-space:nowrap">📍 موقعي</button><button class="btn sec" type="button" onclick="MapPick.pick(eLoc.value,(a,b)=>eLoc.value=`https://maps.google.com/?q=${a},${b}`)" style="white-space:nowrap">🗺️</button></div>
       <small style="color:var(--muted);font-size:11px">إذا أنت بمكان الفاتحة اضغط "موقعي"، أو انسخ الرابط من كوكل ماب.</small>
     </div>
     <div class="mb"><label>ملاحظة تظهر بالمشاركة (اختياري)</label><textarea id="eNote" placeholder="مثال: الفاتحة للرجال والنساء..."></textarea></div>
@@ -336,6 +336,9 @@ a.link{color:var(--gold)}
 <script src="lib/jspdf.umd.min.js"></script>
 <script src="lib/icon-data.js"></script>
 <script src="config.js"></script>
+<link rel="stylesheet" href="lib/leaflet.css">
+<script src="lib/leaflet.js"></script>
+<script src="mappick.js"></script>
 
 <script>
 const KEY='fawateh_db_v1';
@@ -608,7 +611,7 @@ function pdfList(){if(!buildPrint())return;toast('جاري تجهيز ملف PDF
 function render(){renderList();renderEvents();renderReturn();document.getElementById('familyName').value=db.family||'';document.getElementById('appLinkIn').value=appLink()}
 document.querySelectorAll('.modal').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('on')}));
 load();render();loadNative();
-if(isNative&&Plug('App'))Plug('App').addListener('backButton',()=>{const m=document.querySelector('.modal.on');if(m){m.classList.remove('on');return}
+if(isNative&&Plug('App'))Plug('App').addListener('backButton',()=>{const mp=document.getElementById('mpWrap');if(mp&&mp.classList.contains('on')){MapPick.close();return}const m=document.querySelector('.modal.on');if(m){m.classList.remove('on');return}
   const t=document.querySelector('.tab.on');if(t&&t.id!=='t-dir'){go('dir');return}Plug('App').exitApp()});
 </script>
 <div id="onb"></div>
