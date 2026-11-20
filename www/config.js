@@ -1,8 +1,8 @@
 // إعدادات التطبيق — Supabase للدليل العام
 window.APP_CONFIG = {
   version: '1.2.0',
-  supabaseUrl: '',      // مثال: https://xxxx.supabase.co
-  supabaseKey: '',      // المفتاح العام anon / publishable
+  supabaseUrl: 'https://jmhduudjoevjsfiorsib.supabase.co',
+  supabaseKey: 'sb_publishable_4ouCJ95797Cmo9Ekl96etw_7ztniTPA',
   repo: 'ibrata2/ibra-fawateh',
   site: 'https://ibraprogram.netlify.app/'
 };

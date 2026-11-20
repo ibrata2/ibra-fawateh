@@ -1,8 +1,8 @@
 {
   "name": "ibra-fawateh",
-  "productName": "سجل الفواتح IBRA",
-  "version": "1.1.0",
-  "description": "سجل الفواتح IBRA — تسجيل أهل الفضل والمبالغ ورد الجميل",
+  "productName": "فواتح ومناسبات IBRA",
+  "version": "1.2.0",
+  "description": "فواتح ومناسبات IBRA — دليل الفواتح والمناسبات ودفتر الفضل",
   "author": "Ibrahim Alkhazraji (IBRAPROGRAM)",
   "license": "UNLICENSED",
   "main": "electron/main.js",
@@ -18,6 +18,7 @@
     "@capacitor/core": "^8.0.0",
     "@capacitor/filesystem": "^8.0.0",
     "@capacitor/ios": "^8.0.0",
+    "@capacitor/local-notifications": "^8.3.1",
     "@capacitor/preferences": "^8.0.0",
     "@capacitor/share": "^8.0.0"
   },
@@ -28,13 +29,32 @@
   },
   "build": {
     "appId": "com.ibraprogram.fawateh",
-    "productName": "سجل الفواتح IBRA",
+    "productName": "فواتح ومناسبات IBRA",
     "artifactName": "IBRA-Fawateh-${version}-${arch}.${ext}",
-    "directories": { "output": "dist" },
-    "files": ["electron/**", "www/**", "package.json"],
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "electron/**",
+      "www/**",
+      "package.json"
+    ],
     "win": {
       "icon": "resources/icon.ico",
-      "target": [{ "target": "nsis", "arch": ["x64"] }, { "target": "portable", "arch": ["x64"] }]
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
     },
     "nsis": {
       "oneClick": false,
@@ -42,11 +62,13 @@
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "سجل الفواتح IBRA",
+      "shortcutName": "فواتح ومناسبات IBRA",
       "installerIcon": "resources/icon.ico",
       "uninstallerIcon": "resources/icon.ico",
       "language": "1025"
     },
-    "portable": { "artifactName": "IBRA-Fawateh-${version}-portable.${ext}" }
+    "portable": {
+      "artifactName": "IBRA-Fawateh-${version}-portable.${ext}"
+    }
   }
 }

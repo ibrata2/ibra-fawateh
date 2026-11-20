@@ -7,7 +7,7 @@ let win;
 function createWindow() {
   win = new BrowserWindow({
     width: 1150, height: 800, minWidth: 380, minHeight: 600,
-    title: 'سجل الفواتح IBRA',
+    title: 'فواتح ومناسبات IBRA',
     backgroundColor: '#06100a',
     icon: path.join(__dirname, '..', 'resources', 'icon.ico'),
     autoHideMenuBar: true,

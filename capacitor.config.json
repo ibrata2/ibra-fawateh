@@ -1,8 +1,19 @@
 {
   "appId": "com.ibraprogram.fawateh",
-  "appName": "سجل الفواتح",
+  "appName": "فواتح ومناسبات",
   "webDir": "www",
   "backgroundColor": "#06100a",
-  "android": { "allowMixedContent": false },
-  "ios": { "contentInset": "never", "backgroundColor": "#06100a" }
+  "android": {
+    "allowMixedContent": false
+  },
+  "ios": {
+    "contentInset": "never",
+    "backgroundColor": "#06100a"
+  },
+  "plugins": {
+    "LocalNotifications": {
+      "smallIcon": "ic_stat_notify",
+      "iconColor": "#D4AF37"
+    }
+  }
 }
