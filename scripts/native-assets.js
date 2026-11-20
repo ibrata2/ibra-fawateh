@@ -13,6 +13,14 @@ if (which === 'android') {
   const bg = path.join(base, 'values/ic_launcher_background.xml');
   fs.mkdirSync(path.dirname(bg), { recursive: true });
   fs.writeFileSync(bg, '<?xml version="1.0" encoding="utf-8"?>\n<resources>\n    <color name="ic_launcher_background">#001506</color>\n</resources>\n');
+  // صلاحية الموقع (لزر "موقعي" بالفاتحة)
+  const man = path.join(root, 'android/app/src/main/AndroidManifest.xml');
+  if (fs.existsSync(man)) {
+    let m = fs.readFileSync(man, 'utf8');
+    if (!m.includes('ACCESS_FINE_LOCATION'))
+      m = m.replace('</manifest>', '    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />\n    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />\n    <uses-feature android:name="android.hardware.location.gps" android:required="false" />\n</manifest>');
+    fs.writeFileSync(man, m);
+  }
   // اسم التطبيق بالعربي
   const strings = path.join(base, 'values/strings.xml');
   if (fs.existsSync(strings)) {
@@ -36,6 +44,8 @@ if (which === 'ios') {
     p = p.replace(/(<key>CFBundleDisplayName<\/key>\s*<string>)[^<]*(<\/string>)/, '$1سجل الفواتح$2');
     if (!p.includes('UIFileSharingEnabled'))
       p = p.replace('<dict>', '<dict>\n\t<key>UIFileSharingEnabled</key>\n\t<true/>\n\t<key>LSSupportsOpeningDocumentsInPlace</key>\n\t<true/>');
+    if (!p.includes('NSLocationWhenInUseUsageDescription'))
+      p = p.replace('<dict>', '<dict>\n\t<key>NSLocationWhenInUseUsageDescription</key>\n\t<string>لتحديد لوكيشن مكان الفاتحة ومشاركته</string>\n\t<key>NSPhotoLibraryAddUsageDescription</key>\n\t<string>لحفظ بطاقة الفاتحة بالصور</string>');
     fs.writeFileSync(plist, p);
   }
 }

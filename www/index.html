@@ -72,6 +72,11 @@ h2{font-size:17px;margin-bottom:10px;color:var(--gold)}
 .event-item.cur{border-color:var(--gold)}
 a.link{color:var(--gold)}
 #printArea{display:none}
+#cardStage{position:fixed;top:0;left:-20000px;width:1080px;height:1350px;direction:rtl;font-family:Cairo,Tahoma,sans-serif;color:#f4efe2;background:radial-gradient(ellipse at 50% 25%,#0f3a22,#062012 50%,#020a05);padding:60px 80px 120px;text-align:center}
+#cardStage img{width:170px;height:170px;border-radius:38px}
+#cardStage .t1{font-size:40px;color:#d9b866;margin-top:28px;font-weight:700}#cardStage .t2{font-size:64px;font-weight:800;line-height:1.3;margin:4px 0 6px;color:#f6e3a2}#cardStage .t3{font-size:44px;font-weight:700;color:#e9e2cf}
+#cardStage .rows{margin-top:30px;display:flex;flex-direction:column;gap:16px;text-align:right}#cardStage .r{background:rgba(255,255,255,.05);border:2px solid rgba(212,175,55,.35);border-radius:24px;padding:14px 30px;font-size:36px;font-weight:700}
+#cardStage .ft{position:absolute;bottom:40px;left:0;right:0;font-size:30px;color:#9fb3a8}
 #pdfStage{position:fixed;top:0;left:-10000px;width:794px;background:#fff;color:#000;padding:30px;direction:rtl}
 #pdfStage h1{text-align:center;font-size:22px;margin-bottom:4px}#pdfStage .sub{text-align:center;font-size:13px;margin-bottom:12px;color:#333}#pdfStage table{width:100%;border-collapse:collapse;font-size:12px}#pdfStage th,#pdfStage td{border:1px solid #444;padding:5px;text-align:right}#pdfStage th{background:#eee}#pdfStage tfoot td{font-weight:bold;background:#f5f5f5}#pdfStage .foot{margin-top:10px;font-size:11px;text-align:center;color:#555}
 @media print{
@@ -127,13 +132,9 @@ a.link{color:var(--gold)}
   <!-- الفواتح -->
   <section class="tab" id="t-events">
     <div class="card">
-      <h2>إضافة فاتحة جديدة</h2>
-      <div class="row mb">
-        <div><label>اسم المرحوم / المرحومة</label><input id="eName" placeholder="مثال: المرحوم الحاج علي حسين"></div>
-        <div><label>تاريخ الفاتحة</label><input id="eDate" type="date"></div>
-      </div>
-      <div class="mb"><label>المكان (اختياري)</label><input id="ePlace" placeholder="جامع / حسينية / بيت..."></div>
-      <button class="btn" onclick="addEvent()">➕ إضافة الفاتحة</button>
+      <h2>🕊️ الفواتح</h2>
+      <p style="color:var(--muted);font-size:13px;margin-bottom:10px">سجّل الفاتحة بمدتها وعشيرتها وموقعها، وشارك التفاصيل كاملة بالواتساب والفيسبوك والانستا.</p>
+      <button class="btn" onclick="openEvent()">➕ إضافة فاتحة جديدة</button>
     </div>
     <h2>الفواتح المسجلة</h2>
     <div id="events"></div>
@@ -162,6 +163,11 @@ a.link{color:var(--gold)}
       </div>
     </div>
     <div class="card">
+      <h2>🔗 رابط تحميل التطبيق</h2>
+      <p style="color:var(--muted);font-size:13px;margin-bottom:8px">يُضاف تلقائياً لكل رسالة مشاركة حتى غيرك يحمّل التطبيق.</p>
+      <input id="appLinkIn" inputmode="url" onchange="saveLink()">
+    </div>
+    <div class="card">
       <h2>🏷️ اسم العائلة في الطباعة</h2>
       <input id="familyName" placeholder="مثال: آل الخزرجي" onchange="saveFamily()">
     </div>
@@ -178,7 +184,7 @@ a.link{color:var(--gold)}
     <div class="card">
       <h2>ℹ️ حول</h2>
       <p style="line-height:2">
-        <b>سجل الفواتح IBRA</b> — لتسجيل أهل الفضل ورد الجميل · الإصدار 1.0.0<br>
+        <b>سجل الفواتح IBRA</b> — لتسجيل أهل الفضل ورد الجميل · الإصدار 1.1.0<br>
         <span style="color:var(--muted);font-size:13px;display:block;margin:6px 0">بالفاتحة يقف ويانا القريب والجار والصديق، كلٌّ بفضله. هذا التطبيق يحفظ أسماءهم ومبالغهم وتعريفهم سنين، حتى ما ينسى أحد فضل أحد ونرد الجميل بوقته، وتبقى الصلة والتكافل بين الناس.</span>
         برمجة وتطوير ابراهيم الخزرجي<br>
         🌐 موقع تطبيقاتي: <a class="link" href="https://ibraprogram.netlify.app/" target="_blank">ibraprogram.netlify.app</a><br>
@@ -223,6 +229,46 @@ a.link{color:var(--gold)}
   </div>
 </div>
 
+<!-- نافذة الفاتحة -->
+<div class="modal" id="mEvent">
+  <div class="sheet">
+    <h2><span id="eTitle">فاتحة جديدة</span><button class="x" onclick="closeM('mEvent')">×</button></h2>
+    <input type="hidden" id="eId">
+    <div class="mb"><label>اسم المرحوم / المرحومة *</label><input id="eName" placeholder="مثال: المرحوم الحاج علي حسين"></div>
+    <div class="mb"><label>العشيرة</label><input id="eTribe" placeholder="مثال: عشيرة آل فلان"></div>
+    <div class="row mb">
+      <div><label>من تاريخ</label><input id="eFrom" type="date"></div>
+      <div><label>إلى تاريخ</label><input id="eTo" type="date"></div>
+    </div>
+    <div class="mb"><label>المكان</label><input id="ePlace" placeholder="جامع / حسينية / بيت / مضيف... والمنطقة"></div>
+    <div class="mb"><label>الوقت (اختياري)</label><input id="eTime" placeholder="مثال: من العصر إلى المغرب"></div>
+    <div class="mb"><label>لوكيشن المكان (رابط خرائط)</label>
+      <div style="display:flex;gap:6px"><input id="eLoc" placeholder="الصق رابط كوكل ماب أو اضغط موقعي" style="flex:1" inputmode="url">
+      <button class="btn sec" type="button" onclick="myLocation()" style="white-space:nowrap">📍 موقعي</button></div>
+      <small style="color:var(--muted);font-size:11px">إذا أنت بمكان الفاتحة اضغط "موقعي"، أو انسخ الرابط من كوكل ماب.</small>
+    </div>
+    <div class="mb"><label>ملاحظة تظهر بالمشاركة (اختياري)</label><textarea id="eNote" placeholder="مثال: الفاتحة للرجال والنساء..."></textarea></div>
+    <div class="actions"><button class="btn" onclick="saveEvent()">💾 حفظ الفاتحة</button></div>
+  </div>
+</div>
+
+<!-- نافذة المشاركة -->
+<div class="modal" id="mShare">
+  <div class="sheet">
+    <h2><span>📤 مشاركة تفاصيل الفاتحة</span><button class="x" onclick="closeM('mShare')">×</button></h2>
+    <textarea id="shareText" style="min-height:230px;font-size:14px;line-height:1.8"></textarea>
+    <div class="actions" style="margin-top:10px">
+      <button class="btn grn" onclick="shareTo('wa')">💬 واتساب</button>
+      <button class="btn sec" onclick="shareTo('fb')">📘 فيسبوك</button>
+      <button class="btn sec" onclick="shareTo('ig')">📸 انستغرام</button>
+      <button class="btn sec" onclick="shareTo('any')">📤 مشاركة</button>
+      <button class="btn sec" onclick="shareTo('copy')">📋 نسخ</button>
+      <button class="btn" onclick="shareCard()">🖼️ بطاقة صورة</button>
+    </div>
+    <p style="font-size:12px;color:var(--muted);margin-top:8px">الفيسبوك والانستا ما يقبلون نص جاهز: ننسخ النص تلقائياً وتلصقه بالمنشور أو الستوري. وبطاقة الصورة تنفع للستوري والمنشور.</p>
+  </div>
+</div>
+
 <!-- نافذة رد الجميل -->
 <div class="modal" id="mReturn">
   <div class="sheet">
@@ -244,8 +290,10 @@ a.link{color:var(--gold)}
 <div class="toast" id="toast"></div>
 <div id="printArea"></div>
 <div id="pdfStage"></div>
+<div id="cardStage"></div>
 <script src="lib/html2canvas.min.js"></script>
 <script src="lib/jspdf.umd.min.js"></script>
+<script src="lib/icon-data.js"></script>
 
 <script>
 const KEY='fawateh_db_v1';
@@ -274,35 +322,93 @@ function go(t,b){document.querySelectorAll('.tab').forEach(x=>x.classList.remove
 function closeM(id){document.getElementById(id).classList.remove('on')}
 
 /* الفواتح */
-function addEvent(){
-  const name=document.getElementById('eName').value.trim();
-  if(!name)return toast('اكتب اسم المرحوم');
-  const e={id:uid(),name,date:document.getElementById('eDate').value||today(),place:document.getElementById('ePlace').value.trim()};
-  db.events.unshift(e);db.cur=e.id;save();
-  ['eName','eDate','ePlace'].forEach(i=>document.getElementById(i).value='');
-  toast('تمت إضافة الفاتحة');render();
-}
+const DEFAULT_LINK='https://ibraprogram.netlify.app/';
+const appLink=()=>(db.appLink||DEFAULT_LINK).trim();
+const evFrom=e=>e.from||e.date||'';
+const dShow=d=>d?d.split('-').reverse().join('/'):'';
+function evRange(e){const f=evFrom(e),t=e.to||'';return t&&t!==f?`من ${dShow(f)} إلى ${dShow(t)}`:dShow(f)}
+function openEvent(id){const e=id?ev(id):null;
+  document.getElementById('eTitle').textContent=e?'تعديل الفاتحة':'فاتحة جديدة';
+  eId.value=e?e.id:'';eName.value=e?e.name:'';eTribe.value=e?.tribe||'';
+  eFrom.value=e?evFrom(e):today();eTo.value=e?.to||'';ePlace.value=e?.place||'';eTime.value=e?.time||'';eLoc.value=e?.loc||'';eNote.value=e?.note||'';
+  document.getElementById('mEvent').classList.add('on');setTimeout(()=>eName.focus(),100)}
+function saveEvent(){
+  const name=eName.value.trim();if(!name)return toast('اكتب اسم المرحوم');
+  if(eTo.value&&eFrom.value&&eTo.value<eFrom.value)return toast('تاريخ النهاية قبل البداية!');
+  let loc=eLoc.value.trim();if(loc&&!/^https?:\/\//i.test(loc)){const m=loc.match(/^\s*(-?\d+(\.\d+)?)\s*[, ]\s*(-?\d+(\.\d+)?)\s*$/);loc=m?`https://maps.google.com/?q=${m[1]},${m[3]}`:'https://maps.google.com/?q='+encodeURIComponent(loc)}
+  const data={name,tribe:eTribe.value.trim(),from:eFrom.value||today(),to:eTo.value,date:eFrom.value||today(),place:ePlace.value.trim(),time:eTime.value.trim(),loc,note:eNote.value.trim()};
+  if(eId.value)Object.assign(ev(eId.value),data);else{const e={id:uid(),...data};db.events.unshift(e);db.cur=e.id}
+  save();closeM('mEvent');toast('تم حفظ الفاتحة ✔');render()}
+function myLocation(){
+  if(!navigator.geolocation)return toast('الموقع غير متاح بهذا الجهاز');
+  toast('جاري تحديد موقعك...');
+  navigator.geolocation.getCurrentPosition(p=>{eLoc.value=`https://maps.google.com/?q=${p.coords.latitude.toFixed(6)},${p.coords.longitude.toFixed(6)}`;toast('تم تحديد الموقع ✔')},
+    err=>toast(err.code===1?'اسمح للتطبيق باستخدام الموقع من الإعدادات':'تعذّر تحديد الموقع، شغّل GPS'),{enableHighAccuracy:true,timeout:15000})}
+function openLink(u){if(isNative){location.href=u;return}window.open(u,'_blank')}
+document.addEventListener('click',ev2=>{const a=ev2.target.closest&&ev2.target.closest('a[target=_blank]');if(a&&isNative){ev2.preventDefault();openLink(a.href)}});
 function setCur(id){db.cur=id;save();toast('تم اختيار الفاتحة');go('list',document.querySelector('nav button[data-t=list]'))}
-function editEvent(id){const e=ev(id);const n=prompt('اسم المرحوم',e.name);if(n===null)return;e.name=n.trim()||e.name;
-  const p=prompt('المكان',e.place||'');if(p!==null)e.place=p.trim();save();render()}
+function editEvent(id){openEvent(id)}
 function delEvent(id){const c=db.people.filter(p=>p.eventId===id).length;
   if(!confirm(`حذف الفاتحة و ${c} شخص مسجل فيها؟`))return;
   db.events=db.events.filter(e=>e.id!==id);db.people=db.people.filter(p=>p.eventId!==id);
   if(db.cur===id)db.cur=db.events[0]?.id||null;save();render()}
 function renderEvents(){
   const box=document.getElementById('events');
-  if(!db.events.length){box.innerHTML='<div class="empty">لا توجد فواتح بعد</div>';return}
+  if(!db.events.length){box.innerHTML='<div class="empty">لا توجد فواتح بعد — اضغط "إضافة فاتحة جديدة"</div>';return}
   box.innerHTML=db.events.map(e=>{
     const ps=db.people.filter(p=>p.eventId===e.id);const tot=ps.reduce((a,p)=>a+(p.amount||0),0);
-    return `<div class="card event-item ${e.id===db.cur?'cur':''}"><div><b>${esc(e.name)}</b>
-    <div style="font-size:12px;color:var(--muted)">📅 ${esc(e.date)} ${e.place?'· 📍 '+esc(e.place):''}</div>
-    <div style="font-size:12px;color:var(--muted)">👥 ${ps.length} شخص · 💰 ${fmt(tot)} د.ع</div></div>
-    <div class="actions" style="margin:0"><button class="btn sm" onclick="setCur('${e.id}')">${e.id===db.cur?'✔ الحالية':'اختيار'}</button>
-    <button class="btn sec sm" onclick="editEvent('${e.id}')">✏️</button><button class="btn red sm" onclick="delEvent('${e.id}')">🗑️</button></div></div>`}).join('');
+    return `<div class="card ${e.id===db.cur?'event-item cur':''}" style="display:block"><b style="font-size:16px">🕊️ ${esc(e.name)}</b>
+    ${e.tribe?`<div class="meta" style="font-size:13px;color:var(--gold)">🏷️ ${esc(e.tribe)}</div>`:''}
+    <div style="font-size:13px;color:var(--muted);margin-top:2px">📅 ${esc(evRange(e))}${e.time?' · ⏰ '+esc(e.time):''}</div>
+    ${e.place?`<div style="font-size:13px;color:var(--muted)">📍 ${esc(e.place)}</div>`:''}
+    <div style="font-size:13px;color:var(--muted)">👥 ${ps.length} شخص · 💰 ${fmt(tot)} د.ع</div>
+    <div class="actions"><button class="btn sm" onclick="setCur('${e.id}')">${e.id===db.cur?'✔ الحالية':'اختيار'}</button>
+    <button class="btn grn sm" onclick="openShare('${e.id}')">📤 مشاركة</button>
+    ${e.loc?`<button class="btn sec sm" onclick="openLink('${esc(e.loc)}')">🗺️ الموقع</button>`:''}
+    <button class="btn sec sm" onclick="editEvent('${e.id}')">✏️ تعديل</button><button class="btn red sm" onclick="delEvent('${e.id}')">🗑️</button></div></div>`}).join('');
 }
 
+/* المشاركة */
+let shareEv=null;
+function shareMsg(e){const L=[];
+  L.push('إنا لله وإنا إليه راجعون');L.push('');
+  L.push(`🕊️ فاتحة ${e.name}`);
+  if(e.tribe)L.push(`🏷️ ${e.tribe}`);
+  L.push(`📅 ${evRange(e)}`);
+  if(e.time)L.push(`⏰ ${e.time}`);
+  if(e.place)L.push(`📍 ${e.place}`);
+  if(e.loc)L.push(`🗺️ الموقع: ${e.loc}`);
+  if(e.note){L.push('');L.push(e.note)}
+  L.push('');L.push('📲 سجّل أهل الفضل وردّ الجميل بتطبيق سجل الفواتح IBRA:');L.push(appLink());
+  return L.join('\n')}
+function openShare(id){shareEv=ev(id);shareText.value=shareMsg(shareEv);document.getElementById('mShare').classList.add('on')}
+async function copyText(t){try{await navigator.clipboard.writeText(t);return true}catch(e){const a=document.createElement('textarea');a.value=t;document.body.appendChild(a);a.select();let ok=false;try{ok=document.execCommand('copy')}catch(_){}a.remove();return ok}}
+async function shareTo(w){const t=shareText.value;
+  if(w==='wa')return openLink('https://wa.me/?text='+encodeURIComponent(t));
+  if(w==='copy'){await copyText(t);return toast('تم نسخ التفاصيل ✔')}
+  if(w==='fb'){await copyText(t);toast('نسخت النص، الصقه بالمنشور 📋');return openLink('https://www.facebook.com/sharer/sharer.php?u='+encodeURIComponent(appLink()))}
+  if(w==='ig'){await copyText(t);toast('نسخت النص، الصقه بالستوري أو الرسالة 📋');return openLink('https://www.instagram.com/')}
+  if(isNative&&Plug('Share'))return Plug('Share').share({title:'فاتحة '+(shareEv?.name||''),text:t,dialogTitle:'مشاركة التفاصيل'}).catch(()=>{});
+  if(navigator.share)return navigator.share({text:t}).catch(()=>{});
+  await copyText(t);toast('تم نسخ التفاصيل ✔')}
+async function shareCard(){const e=shareEv;if(!e)return;
+  const st=document.getElementById('cardStage');
+  const rows=[e.tribe&&'🏷️ '+e.tribe,'📅 '+evRange(e),e.time&&'⏰ '+e.time,e.place&&'📍 '+e.place,e.loc&&'🗺️ الموقع بالرابط المرفق'].filter(Boolean);
+  st.innerHTML=`<img src="${window.ICON_DATA||'icon.png'}"><div class="t1">إنا لله وإنا إليه راجعون</div><div class="t2">فاتحة ${esc(e.name)}</div>
+   <div class="rows">${rows.map(r=>`<div class="r">${esc(r)}</div>`).join('')}</div>
+   ${e.note?`<div class="t3" style="margin-top:30px;font-size:34px">${esc(e.note)}</div>`:''}
+   <div class="ft">سجل الفواتح IBRA · ${esc(appLink().replace(/^https?:\/\//,'').replace(/\/$/,''))}</div>`;
+  toast('جاري تجهيز البطاقة...');
+  try{await document.fonts.ready;const c=await html2canvas(st,{scale:1,backgroundColor:null,width:1080,height:1350});
+    const blob=await new Promise(r=>c.toBlob(r,'image/jpeg',0.93));
+    await copyText(shareText.value);
+    await download(`فاتحة-${e.name.replace(/[\\/:*?"<>|]/g,'')}.jpg`,blob,'image/jpeg');
+    if(!isNative)toast('تم حفظ الصورة، والنص منسوخ ✔')
+  }catch(err){toast('تعذّر إنشاء البطاقة')}finally{st.innerHTML=''}}
+function saveLink(){const v=document.getElementById('appLinkIn').value.trim();db.appLink=v&&v!==DEFAULT_LINK?v:'';save();document.getElementById('appLinkIn').value=appLink();toast('تم حفظ الرابط')}
+
 /* الأشخاص */
-function fillEventSelect(sel){document.getElementById('pEvent').innerHTML=db.events.map(e=>`<option value="${e.id}" ${e.id===sel?'selected':''}>${esc(e.name)}</option>`).join('')}
+function fillEventSelect(sel){if(!db.events.length)return;document.getElementById('pEvent').innerHTML=db.events.map(e=>`<option value="${e.id}" ${e.id===sel?'selected':''}>${esc(e.name)}</option>`).join('')}
 function openPerson(id){
   if(!db.events.length){toast('أضف فاتحة أولاً');go('events',document.querySelector('nav button[data-t=events]'));return}
   const p=id?db.people.find(x=>x.id===id):null;
@@ -366,7 +472,7 @@ function filtered(){
 }
 function renderList(){
   const e=ev(db.cur);
-  document.getElementById('curEventLbl').textContent=e?`الفاتحة الحالية: ${e.name} — ${e.date}`:'لا توجد فاتحة محددة — أضف فاتحة من تبويب الفواتح';
+  document.getElementById('curEventLbl').textContent=e?`الفاتحة الحالية: ${e.name} — ${evRange(e)}`:'لا توجد فاتحة محددة — أضف فاتحة من تبويب الفواتح';
   const ps=filtered();const sc=document.getElementById('fScope').value;
   document.getElementById('sCount').textContent=ps.length;
   document.getElementById('sTotal').textContent=fmt(ps.reduce((a,p)=>a+(p.amount||0),0));
@@ -406,7 +512,7 @@ function buildPrint(){
   const title=sc==='all'?'سجل الفواتح — جميع الفواتح':`سجل فاتحة ${e?e.name:''}`;
   document.getElementById('printArea').innerHTML=`
   <h1>${esc(title)}</h1>
-  <div class="sub">${db.family?esc(db.family)+' · ':''}${sc!=='all'&&e?'📅 '+esc(e.date)+(e.place?' · '+esc(e.place):''):''} · عدد المسجلين: ${ps.length}</div>
+  <div class="sub">${db.family?esc(db.family)+' · ':''}${sc!=='all'&&e?(e.tribe?esc(e.tribe)+' · ':'')+esc(evRange(e))+(e.place?' · '+esc(e.place):''):''} · عدد المسجلين: ${ps.length}</div>
   <table><thead><tr><th>#</th><th>الاسم</th><th>القرابة / التعريف</th><th>الموبايل</th><th>المنطقة</th><th>النوع</th><th>المبلغ</th>${sc==='all'?'<th>الفاتحة</th>':''}<th>رد الجميل</th></tr></thead>
   <tbody>${ps.map((p,i)=>`<tr><td>${i+1}</td><td>${esc(p.name)}</td><td>${esc(p.rel)}</td><td>${esc(p.phone)}</td><td>${esc(p.area)}</td><td>${esc(p.kind)}</td><td>${p.amount?fmt(p.amount):''}</td>${sc==='all'?`<td>${esc(ev(p.eventId)?.name||'')}</td>`:''}<td>${p.returned?'✔ '+esc(p.returnDate||''):''}</td></tr>`).join('')}</tbody>
   <tfoot><tr><td colspan="6">المجموع</td><td>${fmt(tot)} د.ع</td><td colspan="${sc==='all'?2:1}"></td></tr></tfoot></table>
@@ -455,7 +561,7 @@ function wipeAll(){if(!confirm('حذف كل الفواتح والسجلات نه
   db={events:[],people:[],cur:null,family:''};save();render()}
 
 function pdfList(){if(!buildPrint())return;toast('جاري تجهيز ملف PDF...');makePDF(document.getElementById('printArea').innerHTML,`سجل-الفواتح-${today()}.pdf`)}
-function render(){renderList();renderEvents();renderReturn();document.getElementById('familyName').value=db.family||''}
+function render(){renderList();renderEvents();renderReturn();document.getElementById('familyName').value=db.family||'';document.getElementById('appLinkIn').value=appLink()}
 document.querySelectorAll('.modal').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('on')}));
 load();render();loadNative();
 if(isNative&&Plug('App'))Plug('App').addListener('backButton',()=>{const m=document.querySelector('.modal.on');if(m){m.classList.remove('on');return}
