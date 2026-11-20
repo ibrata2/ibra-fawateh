@@ -8,7 +8,7 @@ function createWindow() {
   win = new BrowserWindow({
     width: 1150, height: 800, minWidth: 380, minHeight: 600,
     title: 'سجل الفواتح IBRA',
-    backgroundColor: '#0f1714',
+    backgroundColor: '#06100a',
     icon: path.join(__dirname, '..', 'resources', 'icon.ico'),
     autoHideMenuBar: true,
     webPreferences: { contextIsolation: true, nodeIntegration: false, spellcheck: false }

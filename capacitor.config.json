@@ -2,7 +2,7 @@
   "appId": "com.ibraprogram.fawateh",
   "appName": "سجل الفواتح",
   "webDir": "www",
-  "backgroundColor": "#0f1714",
+  "backgroundColor": "#06100a",
   "android": { "allowMixedContent": false },
-  "ios": { "contentInset": "never", "backgroundColor": "#0f1714" }
+  "ios": { "contentInset": "never", "backgroundColor": "#06100a" }
 }

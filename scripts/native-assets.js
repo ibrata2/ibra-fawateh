@@ -12,7 +12,7 @@ if (which === 'android') {
   }
   const bg = path.join(base, 'values/ic_launcher_background.xml');
   fs.mkdirSync(path.dirname(bg), { recursive: true });
-  fs.writeFileSync(bg, '<?xml version="1.0" encoding="utf-8"?>\n<resources>\n    <color name="ic_launcher_background">#13241C</color>\n</resources>\n');
+  fs.writeFileSync(bg, '<?xml version="1.0" encoding="utf-8"?>\n<resources>\n    <color name="ic_launcher_background">#001506</color>\n</resources>\n');
   // اسم التطبيق بالعربي
   const strings = path.join(base, 'values/strings.xml');
   if (fs.existsSync(strings)) {
