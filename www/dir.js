@@ -23,7 +23,7 @@ const TITLE_PH={fatiha:'مثال: المرحوم الحاج علي حسين',maj
 function st(){ if(!db.dir) db.dir={}; const d=db.dir;
   d.token=d.token||(uid()+uid()+uid()); d.mine=d.mine||{}; d.seen=d.seen||{}; d.cache=d.cache||[];
   d.notif=d.notif||{on:true,radius:10,province:'',area:'',tribes:[],kinds:'all',lat:null,lng:null};
-  d.filter=d.filter||{q:'',kind:'',province:'',venue:'',sort:'date'}; d.profile=d.profile||{name:'',phone:''}; d.received=d.received||{}; d.privCache=d.privCache||{}; return d }
+  d.filter=d.filter||{q:'',kind:'',province:'',venue:'',sort:'date'}; d.profile=d.profile||{name:'',phone:''}; d.customTribes=d.customTribes||[]; d.received=d.received||{}; d.privCache=d.privCache||{}; return d }
 let EVENTS=[], LOADING=false, LAST_ERR='', REMOTE={};
 
 /* ---------- أدوات ---------- */
@@ -78,6 +78,7 @@ function visible(){
   if(GROUPS[f.kind])list=list.filter(e=>GROUPS[f.kind].includes(e.kind));else if(f.kind)list=list.filter(e=>e.kind===f.kind);
   if(f.province)list=list.filter(e=>e.province===f.province);
   if(f.venue)list=list.filter(e=>e.venue_type===f.venue);
+  if(f.tribe){const tk=tkey(f.tribe);list=list.filter(e=>e.tribe&&tkey(e.tribe).includes(tk))}
   if(q.length)list=list.filter(e=>{const h=norm([e.title,e.tribe,e.province,e.area,e.venue,e.note,KINDS[e.kind]?.[1],VENUES[e.venue_type]?.[1]].join(' '));return q.every(w=>h.includes(w))});
   const me=d.notif;list.forEach(e=>{e._d=(me.lat!=null&&e.lat!=null)?dist(me.lat,me.lng,e.lat,e.lng):null});
   const now=e=>String(e.date_from).slice(0,10)<=today;
@@ -119,6 +120,7 @@ function renderDir(){
      <div class="row" style="margin-top:8px;gap:6px">
        <select onchange="DIR.setF('province',this.value)" style="min-width:110px"><option value="">كل المحافظات</option>${PROVINCES.map(p=>`<option ${f.province===p?'selected':''}>${p}</option>`).join('')}</select>
        <select onchange="DIR.setF('venue',this.value)" style="min-width:110px"><option value="">كل الأماكن</option>${Object.entries(VENUES).map(([k,v])=>`<option value="${k}" ${f.venue===k?'selected':''}>${v[0]} ${v[1]}</option>`).join('')}</select>
+       <button class="btn sec" style="min-width:110px;flex:1;text-align:right;font-weight:400" onclick="DIR.tribeFilter()">🏷️ ${f.tribe?esc(f.tribe)+' ✕':'كل العشائر'}</button>
        <select onchange="DIR.sort(this.value)" style="min-width:110px">
          <option value="date" ${f.sort==='date'?'selected':''}>📅 حسب الموعد</option>
          <option value="near" ${f.sort==='near'?'selected':''}>📍 الأقرب لي</option>
@@ -131,7 +133,7 @@ function renderDir(){
    </div>
    ${LAST_ERR==='config'?`<div class="banner">⚙️ الدليل العام قيد التجهيز. دفتر الفضل يشتغل عادي.</div>`:LAST_ERR?`<div class="banner">⚠️ ${esc(LAST_ERR)}${EVENTS.length?' — تعرض آخر نسخة محفوظة':''}</div>`:''}
    ${receivedHtml()}
-   ${list.length?list.map(evCard).join(''):`<div class="empty">${LOADING?'':(f.q||f.kind||f.province||f.venue)?'ما لكينا نتائج — جرّب كلمة ثانية أو شيل الفلاتر':'ما اكو مناسبات منشورة حالياً.<br><br><button class="btn" onclick="go(\'post\')">📢 انشر أول مناسبة</button>'}</div>`}`;
+   ${list.length?list.map(evCard).join(''):`<div class="empty">${LOADING?'':(f.q||f.kind||f.province||f.venue||f.tribe)?'ما لكينا نتائج — جرّب كلمة ثانية أو شيل الفلاتر':'ما اكو مناسبات منشورة حالياً.<br><br><button class="btn" onclick="go(\'post\')">📢 انشر أول مناسبة</button>'}</div>`}`;
   const qi=$('dirQ');if(qi&&DIR._focus){qi.focus();qi.setSelectionRange(qi.value.length,qi.value.length)}}
 
 function receivedHtml(){const d=st(),today=tday();
@@ -165,7 +167,7 @@ function renderPost(e){
      <div class="mb"><label>نوع المناسبة</label><div class="chips" id="pkChips">${Object.entries(KINDS).map(([k,v])=>`<button type="button" class="chip ${k===kind?'on':''}" data-k="${k}" onclick="DIR.pk('${k}')">${v[0]} ${v[1]}</button>`).join('')}</div></div>
      <input type="hidden" id="pkKind" value="${kind}">
      <div class="mb"><label id="pkTitleL">${TITLE_LABEL[kind]} *</label><input id="pkTitle" maxlength="120" placeholder="${TITLE_PH[kind]}" value="${esc(e.title||'')}"></div>
-     <div class="mb"><label>العشيرة</label><input id="pkTribe" maxlength="80" placeholder="مثال: العشيرة الفلانية" value="${esc(e.tribe||'')}"></div>
+     <div class="mb"><label>العشيرة</label>${tribeField('pkTribe',e.tribe)}</div>
      <div class="row mb">
        <div><label>المحافظة *</label><select id="pkProv">${PROVINCES.map(p=>`<option ${(e.province||st().notif.province||'بغداد')===p?'selected':''}>${p}</option>`).join('')}</select></div>
        <div><label>المنطقة</label><input id="pkArea" maxlength="80" placeholder="مثال: بغداد الجديدة" value="${esc(e.area||'')}"></div>
@@ -242,6 +244,30 @@ function share(id){const e=EVENTS.find(x=>x.id===id)||st().privCache[id];if(!e)r
     cardTitle:(e.kind==='fatiha'?'فاتحة ':k[1]+' ')+e.title,cardTop:SORROW(e.kind)&&e.kind!=='majlis'?'إنا لله وإنا إليه راجعون':e.kind==='majlis'||e.kind==='religious'?'السلام على الحسين وعلى أولاد الحسين':'ألف مبروك 🎊'};
   $('mShare').classList.add('on')}
 
+/* ---------- اختيار العشيرة ---------- */
+const tkey=t=>norm(t).replace(/^عشيره\s+/,'').replace(/^(ال|آل\s*)/,'').replace(/\s+/g,'');
+function allTribes(){const m=new Map();const add=t=>{t=String(t||'').trim();if(t.length<2)return;const k=tkey(t);if(k&&!m.has(k))m.set(k,t)};
+  (window.TRIBES||[]).forEach(add);st().customTribes.forEach(add);EVENTS.forEach(e=>add(e.tribe));(db.events||[]).forEach(e=>add(e.tribe));
+  return [...m.values()]}
+let TP=null;
+function tribePick(o){TP={multi:!!o.multi,sel:new Set((o.selected||[]).filter(Boolean)),done:o.done,q:''};
+  showSheet(o.multi?'🏷️ العشائر اللي تتابعها':'🏷️ اختار العشيرة',`
+   <input id="tpQ" class="bigsearch" placeholder="🔍 اكتب اسم العشيرة..." oninput="DIR.tpq(this.value)" autocomplete="off">
+   <div id="tpSel" style="margin:8px 0"></div><div id="tpList" style="max-height:52vh;overflow:auto"></div>
+   ${o.multi?`<button class="btn" style="width:100%;margin-top:10px" onclick="DIR.tpDone()">✔ تم</button>`:''}`);
+  renderTP();setTimeout(()=>{const i=$('tpQ');if(i)i.focus()},150)}
+function renderTP(){if(!TP||!$('tpList'))return;const q=TP.q.trim(),qk=tkey(q),qn=norm(q);
+  const all=allTribes();let list=q?all.filter(t=>norm(t).includes(qn)||tkey(t).includes(qk)):all;
+  list.sort((a,b)=>{const as=tkey(a).startsWith(qk)?0:1,bs=tkey(b).startsWith(qk)?0:1;return as-bs});
+  const exact=q&&all.some(t=>tkey(t)===qk);
+  TP.view=list.slice(0,120);const selArr=[...TP.sel];TP.selView=selArr;
+  const row=(t,i)=>`<div class="sw" style="cursor:pointer" onclick="DIR.tpI(${i})"><span style="font-size:15px">${esc(t)}</span><span>${TP.sel.has(t)?'✅':'○'}</span></div>`;
+  $('tpList').innerHTML=(q&&!exact?`<button class="btn grn" style="width:100%;margin-bottom:8px" onclick="DIR.tpAdd()">➕ إضافة «${esc(q)}» كعشيرة جديدة</button>`:'')+
+    (!TP.multi&&!q?`<div class="sw" style="cursor:pointer;color:var(--muted)" onclick="DIR.tpPick('')"><span>— بدون عشيرة —</span><span></span></div>`:'')+
+    (list.length?TP.view.map(row).join('')+(list.length>120?`<p style="font-size:12px;color:var(--muted);text-align:center;padding:8px">اكتب حروف أكثر حتى تشوف البقية (${list.length})</p>`:''):`<p style="color:var(--muted);text-align:center;padding:14px">ما لكينا هالاسم، أضفه من الزر الأخضر</p>`);
+  if($('tpSel'))$('tpSel').innerHTML=TP.multi&&TP.sel.size?selArr.map((t,i)=>`<span class="chip on" style="display:inline-block;margin:2px" onclick="DIR.tpS(${i})">${esc(t)} ✕</span>`).join(''):''}
+function tribeField(id,val){return `<input id="${id}" readonly value="${esc(val||'')}" placeholder="اضغط واختار العشيرة" onclick="DIR.tribe('${id}')" style="cursor:pointer">`}
+
 /* ---------- الإشعارات ---------- */
 const LN=()=>isNative?Plug('LocalNotifications'):null;
 async function notifPerm(){
@@ -304,7 +330,9 @@ function renderSettings(){const root=$('setRoot');if(!root)return;const n=st().n
      <div class="sw"><span style="font-size:13px">${n.lat!=null?'✅ موقعك محفوظ':'⚠️ موقعك غير محدد'}</span><button class="btn sec sm" onclick="DIR.myPos()">📍 حدّث موقعي</button></div>
      <div class="sw"><span>🏙️ محافظتي</span><select style="width:auto" onchange="DIR.nset('province',this.value)"><option value="">—</option>${PROVINCES.map(p=>`<option ${n.province===p?'selected':''}>${p}</option>`).join('')}</select></div>
      <div class="mb" style="margin-top:8px"><label>منطقتي (اختياري — حتى تجيك مناسبات منطقتك بس)</label><input value="${esc(n.area||'')}" placeholder="مثال: بغداد الجديدة" onchange="DIR.nset('area',this.value.trim())"></div>
-     <div class="mb"><label>🏷️ العشائر اللي أتابعها (افصل بفاصلة)</label><input value="${esc((n.tribes||[]).join('، '))}" placeholder="مثال: العشيرة الفلانية، العشيرة الفلانية" onchange="DIR.nset('tribes',this.value.split(/[،,]/).map(s=>s.trim()).filter(Boolean))"></div>
+     <div class="mb"><label>🏷️ العشائر اللي أتابعها</label>
+       <div>${(n.tribes||[]).map(t=>`<span class="chip on" style="display:inline-block;margin:2px">${esc(t)}</span>`).join('')||'<span style="font-size:12px;color:var(--muted)">ما تتابع أي عشيرة</span>'}</div>
+       <button class="btn sec sm" style="margin-top:6px" onclick="DIR.followTribes()">➕ اختيار العشائر</button></div>
      <p style="font-size:11px;color:var(--muted)">يوصلك إشعار بأي مناسبة جديدة قريبة منك، أو بمحافظتك ومنطقتك، أو لعشيرة تتابعها. الإشعار يوصل لمن التطبيق مفتوح أو تفتحه.</p>
      <button class="btn sec sm" onclick="DIR.testN()">🔔 تجربة إشعار</button>
    </div>
@@ -378,6 +406,15 @@ window.DIR={
   prof:(k,v)=>{st().profile[k]=v;save();toast('تم الحفظ ✔')},
   openLinkBox:()=>{const u=prompt('الصق رابط المناسبة:');const id=idFromUrl(u)||(u&&u.trim());if(id)openById(id)},
   copyLink:id=>copyText(evLink(id)).then(()=>toast('تم نسخ الرابط ✔')),
+  tribe:id=>tribePick({selected:[$(id).value],done:t=>{$(id).value=t}}),
+  followTribes:()=>tribePick({multi:true,selected:st().notif.tribes||[],done:list=>{st().notif.tribes=list;save();renderSettings();toast('تم الحفظ ✔')}}),
+  tribeFilter:()=>{if(st().filter.tribe){st().filter.tribe='';save();return renderDir()}tribePick({done:t=>{st().filter.tribe=t;save();renderDir()}})},
+  tpq:v=>{TP.q=v;renderTP()},
+  tpI:i=>DIR.tpPick(TP.view[i]),
+  tpS:i=>DIR.tpPick(TP.selView[i]),
+  tpPick:t=>{if(!TP)return;if(TP.multi){TP.sel.has(t)?TP.sel.delete(t):TP.sel.add(t);renderTP()}else{closeM('mGen');TP.done(t);TP=null}},
+  tpAdd:()=>{const t=TP.q.trim().replace(/\s+/g,' ');if(t.length<2)return toast('اكتب الاسم كامل');const d=st();if(!d.customTribes.includes(t))d.customTribes.push(t);save();TP.q='';$('tpQ').value='';DIR.tpPick(t);if(TP&&TP.multi)renderTP()},
+  tpDone:()=>{closeM('mGen');const l=[...TP.sel];TP.done(l);TP=null},
   mapPick:()=>MapPick.pick($('pkLoc').value,(a,b)=>{$('pkLoc').value=a+','+b;toast('تم تحديد المكان ✔')}),
   viewMap:id=>{const e=EVENTS.find(x=>x.id===id)||st().privCache[id];if(!e)return;MapPick.view(e.lat,e.lng,(KINDS[e.kind]||KINDS.other)[1]+' — '+e.title,popHtml(e))},
   mapAll:()=>MapPick.many(visible().map(e=>({lat:e.lat,lng:e.lng,emoji:(KINDS[e.kind]||KINDS.other)[0],html:popHtml(e)})),'خريطة المناسبات ('+visible().filter(e=>e.lat!=null).length+')')

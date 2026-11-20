@@ -276,7 +276,7 @@ a.link{color:var(--gold)}
     <h2><span id="eTitle">فاتحة جديدة</span><button class="x" onclick="closeM('mEvent')">×</button></h2>
     <input type="hidden" id="eId">
     <div class="mb"><label>اسم المرحوم / المرحومة *</label><input id="eName" placeholder="مثال: المرحوم الحاج علي حسين"></div>
-    <div class="mb"><label>العشيرة</label><input id="eTribe" placeholder="مثال: العشيرة الفلانية"></div>
+    <div class="mb"><label>العشيرة</label><input id="eTribe" readonly placeholder="اضغط واختار العشيرة" onclick="DIR.tribe('eTribe')" style="cursor:pointer"></div>
     <div class="row mb">
       <div><label>من تاريخ</label><input id="eFrom" type="date"></div>
       <div><label>إلى تاريخ</label><input id="eTo" type="date"></div>
@@ -335,6 +335,7 @@ a.link{color:var(--gold)}
 <script src="lib/html2canvas.min.js"></script>
 <script src="lib/jspdf.umd.min.js"></script>
 <script src="lib/icon-data.js"></script>
+<script src="lib/tribes.js"></script>
 <script src="config.js"></script>
 <link rel="stylesheet" href="lib/leaflet.css">
 <script src="lib/leaflet.js"></script>
