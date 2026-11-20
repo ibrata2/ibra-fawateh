@@ -323,16 +323,44 @@ let UPD=null;
 const vnum=v=>String(v||'').replace(/^v/,'').split('.').map(n=>parseInt(n)||0);
 const newer=(a,b)=>{a=vnum(a);b=vnum(b);for(let i=0;i<3;i++){if((a[i]||0)!==(b[i]||0))return (a[i]||0)>(b[i]||0)}return false};
 async function checkUpdate(manual){
+  st().updAt=Date.now();save();
+  if(DESK()){if(manual){const r=await window.ibraDesktop.check();toast(r.state==='latest'?'عندك آخر إصدار ✔ ('+VERSION+')':r.state==='downloading'?'لكينا تحديث، ينزل بالخلفية...':'تعذّر التحقق من التحديث')}return}
   try{const r=await fetch(`https://api.github.com/repos/${CFG.repo}/releases/latest`,{headers:{Accept:'application/vnd.github+json'}});if(!r.ok)throw 0;const j=await r.json();
     if(newer(j.tag_name,VERSION)){const pl=platform(),A=j.assets||[];
       const pick=pl==='android'?A.find(a=>/\.apk$/i.test(a.name)):pl==='ios'?A.find(a=>/\.ipa$/i.test(a.name)):pl==='windows'?A.find(a=>/Setup\.exe$/i.test(a.name)):null;
       UPD={ver:j.tag_name.replace(/^v/,''),url:pick?pick.browser_download_url:(REMOTE.download_link||CFG.site),notes:j.body||''};
-      $('updBtn').style.display='';if(manual)openUpdate()}
+      $('updBtn').style.display='';$('updBtn').textContent='⬆️ تحديث';$('updBtn').onclick=openUpdate;renderSettings();
+      if(manual||st().updPrompted!==UPD.ver){st().updPrompted=UPD.ver;save();openUpdate()}}
     else{UPD=null;$('updBtn').style.display='none';if(manual)toast('عندك آخر إصدار ✔ ('+VERSION+')')}}
   catch(e){if(manual)toast('تعذّر التحقق من التحديث')}}
+const AU=()=>isNative&&Plug('ApkUpdater');
+let UPDL=null;
 window.openUpdate=function(){if(!UPD)return checkUpdate(true);
-  const ios=platform()==='ios';
-  if(confirm(`⬆️ إصدار جديد ${UPD.ver} متوفر (عندك ${VERSION}).\n\n${ios?'ينزل ملف IPA، وقّعه وثبّته مثل كل مرة.':'ينزل الملف وثبّته فوق النسخة الحالية، وبياناتك تبقى.'}\n\nتنزيل التحديث الآن؟`))openLink(UPD.url)};
+  const pl=platform();
+  const body=pl==='android'&&AU()?`<p style="line-height:1.9">نزل الإصدار <b>${esc(UPD.ver)}</b> (عندك ${VERSION}). ينزل داخل التطبيق ويتثبت فوق النسخة الحالية، وبياناتك تبقى.</p>
+      <div id="updProg" style="display:none;margin:12px 0"><div style="height:12px;background:var(--card2);border-radius:8px;overflow:hidden"><div id="updBar" style="height:100%;width:0;background:var(--gold);transition:width .2s"></div></div><p id="updPct" style="text-align:center;font-size:13px;color:var(--muted);margin-top:6px">0%</p></div>
+      <button class="btn" id="updGo" style="width:100%" onclick="DIR.updInstall()">⬇️ تنزيل وتثبيت التحديث</button>`
+   :pl==='ios'?`<p style="line-height:1.9">نزل الإصدار <b>${esc(UPD.ver)}</b> (عندك ${VERSION}). نظام الآيفون ما يسمح للتطبيق يثبّت نفسه، فنزّل ملف IPA الجديد ووقّعه وثبّته مثل كل مرة. بياناتك تبقى.</p><button class="btn" style="width:100%" onclick="openLink('${esc(UPD.url)}')">⬇️ تنزيل ملف التحديث</button>`
+   :`<p style="line-height:1.9">نزل الإصدار <b>${esc(UPD.ver)}</b> (عندك ${VERSION}). نزّل الملف وثبّته فوق النسخة الحالية، وبياناتك تبقى.</p><button class="btn" style="width:100%" onclick="openLink('${esc(UPD.url)}')">⬇️ تنزيل التحديث</button>`;
+  showSheet('⬆️ تحديث جديد',body+(UPD.notes?`<details style="margin-top:12px"><summary style="cursor:pointer;color:var(--muted);font-size:13px">شنو الجديد؟</summary><p style="white-space:pre-line;font-size:13px;color:var(--muted);margin-top:6px">${esc(UPD.notes.replace(/[*#]/g,'').slice(0,800))}</p></details>`:''))};
+async function updInstall(){const a=AU();if(!a||!UPD)return;
+  try{const c=await a.canInstall();
+    if(!c.allowed){toast('اسمح للتطبيق يثبّت التحديثات، وارجع اضغط تنزيل');await a.openInstallSettings();return}
+    $('updGo').disabled=true;$('updGo').textContent='⏳ جاري التنزيل...';$('updProg').style.display='';
+    if(!UPDL)UPDL=await a.addListener('progress',ev=>{const b=$('updBar'),t=$('updPct');if(b)b.style.width=ev.percent+'%';if(t)t.textContent=ev.percent+'%'});
+    await a.downloadAndInstall({url:UPD.url});
+    if($('updGo')){$('updGo').disabled=false;$('updGo').textContent='📲 فتح التثبيت مرة ثانية'}
+    toast('اضغط "تثبيت" بالنافذة اللي طلعت');
+  }catch(e){toast('تعذّر التنزيل: '+(e.message||e));if($('updGo')){$('updGo').disabled=false;$('updGo').textContent='🔄 إعادة المحاولة'}}}
+
+/* سطح المكتب: التحديث يصير بالخلفية من البرنامج نفسه */
+const DESK=()=>window.ibraDesktop&&window.ibraDesktop.updater;
+let DESK_ST=null;
+if(window.ibraDesktop)window.ibraDesktop.onStatus(s=>{DESK_ST=s;const b=$('updBtn');if(!b)return;
+  if(s.state==='downloading'){b.style.display='';b.textContent=`⬇️ ${s.percent||0}%`;b.onclick=()=>toast('التحديث ينزل بالخلفية، وراح يسألك تعيد التشغيل')}
+  else if(s.state==='ready'){b.style.display='';b.textContent='✅ أعد التشغيل';b.onclick=()=>toast('سكّر البرنامج وافتحه حتى يتثبت التحديث')}
+  else if(s.state==='latest'||s.state==='checking'){b.style.display='none'}
+  renderSettings()});
 
 /* ---------- الإعدادات ---------- */
 function renderSettings(){const root=$('setRoot');if(!root)return;const n=st().notif;
@@ -358,7 +386,7 @@ function renderSettings(){const root=$('setRoot');if(!root)return;const n=st().n
      <p style="font-size:11px;color:var(--muted)">يوصلك إشعار بأي مناسبة جديدة قريبة منك، أو بمحافظتك ومنطقتك، أو لعشيرة تتابعها. الإشعار يوصل لمن التطبيق مفتوح أو تفتحه.</p>
      <button class="btn sec sm" onclick="DIR.testN()">🔔 تجربة إشعار</button>
    </div>
-   <div class="card"><h2>🔄 التحديثات</h2><p style="font-size:13px;color:var(--muted);margin-bottom:8px">الإصدار الحالي ${VERSION}. التطبيق يتحقق تلقائياً من التحديثات.</p><button class="btn sec" onclick="DIR.upd()">تحقق من التحديث</button></div>
+   <div class="card"><h2>🔄 التحديثات</h2><p style="font-size:13px;color:var(--muted);margin-bottom:8px">الإصدار الحالي ${VERSION}. التطبيق يفحص التحديثات أول ما يشتغل وكل 6 ساعات${platform()==='android'?'، وينزّلها ويثبّتها من داخله':DESK()?'، وينزّلها بالخلفية ويسألك تعيد التشغيل':''}.${st().updAt?'<br>آخر فحص: '+new Date(st().updAt).toLocaleString('ar-IQ',{hour:'2-digit',minute:'2-digit',day:'numeric',month:'numeric'}):''}${DESK_ST&&DESK_ST.state==='downloading'?'<br>⬇️ جاري تنزيل التحديث '+(DESK_ST.percent||0)+'%':DESK_ST&&DESK_ST.state==='ready'?'<br>✅ التحديث جاهز، أعد تشغيل البرنامج':''}</p><button class="btn sec" onclick="DIR.upd()">تحقق من التحديث</button></div>
    <div class="card"><h2>💛 ادعم المؤسس</h2><p style="font-size:13px;color:var(--muted);margin-bottom:8px">التطبيق مجاني وبدون إعلانات. دعمك يساعد يستمر ويتطور ويغطي كلفة السيرفر.</p><button class="btn" onclick="DIR.support()">💛 طرق الدعم</button></div>
    <div class="card"><h2>📖 شرح التطبيق</h2><button class="btn sec" onclick="DIR.onb(0)">عرض شاشات الترحيب</button></div>`;
   const vt=$('verTxt');if(vt)vt.textContent='الإصدار '+VERSION}
@@ -422,7 +450,7 @@ window.DIR={
   nset:(k,v)=>{st().notif[k]=v;save();renderSettings()},
   myPos:()=>refreshMyLoc(),
   testN:async()=>{if(!(await notifPerm()))return toast('اسمح للتطبيق بالإشعارات من إعدادات الجهاز');notify([{id:'t',kind:'fatiha',title:'تجربة إشعار',province:st().notif.province||'بغداد',date_from:tday(),date_to:tday()}]);toast('أرسلت إشعار تجربة')},
-  upd:()=>checkUpdate(true),support,onb,adSave,adAct,
+  upd:()=>checkUpdate(true),updInstall,support,onb,adSave,adAct,
   vis:v=>{$('pkVis').value=v;document.querySelectorAll('#pkVisSeg button').forEach((b,i)=>b.classList.toggle('on',(i===0)===(v==='public')));$('pkReachBox').style.display=v==='public'?'':'none';
     $('pkVisHint').textContent=v==='private'?'ما تظهر بالدليل. بعد النشر ترسل رابطها بس للناس اللي تريدهم.':'تظهر لكل المستخدمين بالبحث، وتوصل إشعاراتها للقريبين.'},
   prof:(k,v)=>{st().profile[k]=v;save();toast('تم الحفظ ✔')},
@@ -454,10 +482,11 @@ window.onTab=t=>{if(t==='dir')renderDir();if(t==='post'&&!EDIT_ID)renderPost();i
 function boot(){const d=st();EVENTS=d.cache||[];REMOTE=d.remote||{};window.REMOTE_LINK=REMOTE.download_link||'';
   renderDir();renderPost();renderSettings();
   loadEvents(true);loadConfig();setTimeout(()=>checkUpdate(false),3000);
+  setInterval(()=>checkUpdate(false),6*3600e3);
   if(!d.onb&&!idFromUrl(location.href))onb(0);
   if(d.notif.on){setTimeout(notifPerm,4000);if(d.notif.lat!=null&&Date.now()-(d.notif.locAt||0)>3600e3)setTimeout(()=>refreshMyLoc(true),6000)}
   setInterval(()=>loadEvents(true),10*60*1000);
-  document.addEventListener('visibilitychange',()=>{if(!document.hidden&&Date.now()-(st().cacheAt||0)>60000)loadEvents(true)});
+  document.addEventListener('visibilitychange',()=>{if(document.hidden)return;if(Date.now()-(st().cacheAt||0)>60000)loadEvents(true);if(Date.now()-(st().updAt||0)>6*3600e3)checkUpdate(false)});
   if(isNative&&Plug('App'))Plug('App').addListener('resume',()=>loadEvents(true));
   if(LN())LN().addListener('localNotificationActionPerformed',()=>go('dir'));
   const eid=idFromUrl(location.href);if(eid)setTimeout(()=>openById(eid),600);

@@ -13,6 +13,9 @@ if (which === 'android') {
   const bg = path.join(base, 'values/ic_launcher_background.xml');
   fs.mkdirSync(path.dirname(bg), { recursive: true });
   fs.writeFileSync(bg, '<?xml version="1.0" encoding="utf-8"?>\n<resources>\n    <color name="ic_launcher_background">#001506</color>\n</resources>\n');
+  // التحديث من داخل التطبيق
+  const jdir = path.join(root, 'android/app/src/main/java/com/ibraprogram/fawateh');
+  for (const f of ['ApkUpdaterPlugin.java', 'MainActivity.java']) cp(path.join(res, 'native', f), path.join(jdir, f));
   // أيقونة الإشعارات
   for (const d of fs.readdirSync(path.join(res, 'notify'))) cp(path.join(res, 'notify', d, 'ic_stat_notify.png'), path.join(base, d, 'ic_stat_notify.png'));
   // صلاحية الموقع (لزر "موقعي" بالفاتحة)
@@ -20,7 +23,7 @@ if (which === 'android') {
   if (fs.existsSync(man)) {
     let m = fs.readFileSync(man, 'utf8');
     if (!m.includes('ACCESS_FINE_LOCATION'))
-      m = m.replace('</manifest>', '    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />\n    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />\n    <uses-feature android:name="android.hardware.location.gps" android:required="false" />\n    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />\n</manifest>');
+      m = m.replace('</manifest>', '    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />\n    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />\n    <uses-feature android:name="android.hardware.location.gps" android:required="false" />\n    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />\n    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />\n</manifest>');
     // روابط المناسبات fawateh://e/<id> تفتح التطبيق
     if (!m.includes('android:scheme="fawateh"'))
       m = m.replace('<category android:name="android.intent.category.LAUNCHER" />\n            </intent-filter>',

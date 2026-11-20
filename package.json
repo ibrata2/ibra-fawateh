@@ -1,7 +1,7 @@
 {
   "name": "ibra-fawateh",
   "productName": "فواتح ومناسبات IBRA",
-  "version": "1.6.0",
+  "version": "1.7.0",
   "description": "فواتح ومناسبات IBRA — دليل الفواتح والمناسبات ودفتر الفضل",
   "author": "Ibrahim Alkhazraji (IBRAPROGRAM)",
   "license": "UNLICENSED",
@@ -20,7 +20,8 @@
     "@capacitor/ios": "^8.0.0",
     "@capacitor/local-notifications": "^8.3.1",
     "@capacitor/preferences": "^8.0.0",
-    "@capacitor/share": "^8.0.0"
+    "@capacitor/share": "^8.0.0",
+    "electron-updater": "^6.8.11"
   },
   "devDependencies": {
     "@capacitor/cli": "^8.0.0",
@@ -69,6 +70,14 @@
     },
     "portable": {
       "artifactName": "IBRA-Fawateh-${version}-portable.${ext}"
-    }
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "ibrata2",
+        "repo": "ibra-fawateh",
+        "releaseType": "release"
+      }
+    ]
   }
 }
