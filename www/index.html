@@ -5,9 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="سجل الفواتح">
+<meta name="apple-mobile-web-app-title" content="فواتح ومناسبات">
 <meta name="theme-color" content="#06100a">
-<title>سجل الفواتح IBRA</title>
+<title>فواتح ومناسبات IBRA</title>
 <style>
 @font-face{font-family:'Cairo';font-weight:400;src:url(fonts/cairo-arabic-400-normal.woff2) format('woff2');unicode-range:U+0600-06FF,U+0750-077F,U+08A0-08FF,U+FB50-FDFF,U+FE70-FEFF}
 @font-face{font-family:'Cairo';font-weight:700;src:url(fonts/cairo-arabic-700-normal.woff2) format('woff2');unicode-range:U+0600-06FF,U+0750-077F,U+08A0-08FF,U+FB50-FDFF,U+FE70-FEFF}
@@ -58,7 +58,31 @@ textarea{min-height:60px;resize:vertical}
 .tag.wait{background:rgba(212,180,106,.12);color:var(--gold);border-color:var(--gold2)}
 .actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
 .empty{text-align:center;color:var(--muted);padding:30px 10px}
-.tab{display:none}.tab.on{display:block}
+.tab{display:none}.tab.on{display:block}.ltab{display:none}.ltab.on{display:block}
+.seg{display:flex;background:var(--card2);border-radius:12px;padding:3px;gap:3px}.seg button{flex:1;background:none;border:none;color:var(--muted);padding:8px 4px;border-radius:9px;font-weight:700;font-size:13px;cursor:pointer}.seg button.on{background:var(--gold);color:#1a1408}
+.chips{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none}.chips::-webkit-scrollbar{display:none}
+.chip{flex-shrink:0;background:var(--card2);border:1px solid var(--line);color:var(--text);border-radius:20px;padding:6px 12px;font-size:13px;cursor:pointer;white-space:nowrap}.chip.on{background:var(--gold);color:#1a1408;border-color:var(--gold);font-weight:700}
+.ev{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:10px;position:relative}
+.ev.mine{border-color:var(--gold2)}
+.ev .k{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:700;padding:3px 10px;border-radius:20px;background:rgba(212,180,106,.14);color:var(--gold);border:1px solid var(--gold2)}
+.ev .k.joy{background:rgba(63,174,122,.14);color:#7fd6a8;border-color:#3fae7a}
+.ev h3{font-size:17px;margin:8px 0 2px}
+.ev .m{font-size:13px;color:var(--muted);margin-top:3px}
+.ev .st{position:absolute;top:12px;left:12px;font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px}
+.st.now{background:#3fae7a;color:#fff}.st.soon{background:var(--card2);color:var(--gold);border:1px solid var(--gold2)}
+.bigsearch{font-size:17px;padding:13px 14px;border-radius:14px}
+.banner{background:linear-gradient(135deg,rgba(212,180,106,.18),rgba(212,180,106,.06));border:1px solid var(--gold2);border-radius:14px;padding:10px 12px;margin-bottom:10px;font-size:13px;line-height:1.7}
+.sw{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)}
+.sw:last-child{border:none}
+.tgl{width:46px;height:26px;border-radius:20px;background:var(--card2);border:1px solid var(--line);position:relative;cursor:pointer;flex-shrink:0}
+.tgl::after{content:'';position:absolute;top:2px;right:2px;width:20px;height:20px;border-radius:50%;background:var(--muted);transition:.2s}
+.tgl.on{background:var(--green);border-color:var(--green)}.tgl.on::after{right:22px;background:#fff}
+#onb{position:fixed;inset:0;z-index:80;background:radial-gradient(ellipse at 50% 30%,#0f3a22,#062012 50%,#020a05);display:none;flex-direction:column;align-items:center;justify-content:center;padding:30px 24px;text-align:center}
+#onb.on{display:flex}
+#onb img{width:120px;height:120px;border-radius:28px;margin-bottom:18px}
+#onb h2{font-size:24px;justify-content:center}
+#onb p{color:#c9d6cc;line-height:1.9;font-size:15px;max-width:420px}
+.dots{display:flex;gap:6px;justify-content:center;margin:18px 0}.dots i{width:8px;height:8px;border-radius:50%;background:var(--line)}.dots i.on{background:var(--gold);width:22px;border-radius:6px}
 h2{font-size:17px;margin-bottom:10px;color:var(--gold)}
 .modal{position:fixed;inset:0;background:rgba(0,0,0,.65);display:none;align-items:flex-end;justify-content:center;z-index:50}
 .modal.on{display:flex}
@@ -96,14 +120,28 @@ a.link{color:var(--gold)}
 <body>
 
 <header>
-  <img src="icon.png" alt=""><div><h1>سجل الفواتح IBRA</h1>
-  <p id="curEventLbl">لا توجد فاتحة محددة</p></div>
+  <img src="icon.png" alt=""><div style="flex:1;min-width:0"><h1>فواتح ومناسبات</h1>
+  <p id="hdrSub">دليل الفواتح والمناسبات · دفتر الفضل</p></div>
+  <button id="updBtn" class="btn sm" style="display:none" onclick="openUpdate()">⬆️ تحديث</button>
 </header>
 
 <div class="wrap">
 
+  <!-- ===== الدليل العام ===== -->
+  <section class="tab on" id="t-dir"><div id="dirRoot"></div></section>
+
+  <!-- ===== نشر مناسبة ===== -->
+  <section class="tab" id="t-post"><div id="postRoot"></div></section>
+
+  <!-- ===== دفتر الفضل (القسم الخاص) ===== -->
+  <section class="tab" id="t-ledger">
+    <div class="card" style="padding:10px 12px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><b style="color:var(--gold)">📒 دفتر الفضل</b><span style="font-size:11px;color:var(--muted)">🔒 خاص بجهازك فقط</span></div>
+      <div class="seg"><button class="on" data-l="list" onclick="goL('list')">📋 السجل</button><button data-l="events" onclick="goL('events')">🕊️ مناسباتي</button><button data-l="return" onclick="goL('return')">🤝 رد الجميل</button></div>
+      <p id="curEventLbl" style="font-size:12px;color:var(--muted);margin-top:8px"></p>
+    </div>
   <!-- السجل -->
-  <section class="tab on" id="t-list">
+  <section class="ltab on" id="t-list">
     <div class="stats">
       <div class="stat"><b id="sCount">0</b><small>عدد المسجلين</small></div>
       <div class="stat"><b id="sTotal">0</b><small>مجموع المبالغ (د.ع)</small></div>
@@ -130,7 +168,7 @@ a.link{color:var(--gold)}
   </section>
 
   <!-- الفواتح -->
-  <section class="tab" id="t-events">
+  <section class="ltab" id="t-events">
     <div class="card">
       <h2>🕊️ الفواتح</h2>
       <p style="color:var(--muted);font-size:13px;margin-bottom:10px">سجّل الفاتحة بمدتها وعشيرتها وموقعها، وشارك التفاصيل كاملة بالواتساب والفيسبوك والانستا.</p>
@@ -141,7 +179,7 @@ a.link{color:var(--gold)}
   </section>
 
   <!-- رد الجميل -->
-  <section class="tab" id="t-return">
+  <section class="ltab" id="t-return">
     <div class="card">
       <h2>🤝 رد الجميل</h2>
       <p style="color:var(--muted);font-size:13px;margin-bottom:10px">عندما يصير عند شخص فاتحة أو مناسبة، ابحث عن اسمه لتعرف ماذا قدّم لكم ومتى، ثم سجّل ردّك للجميل.</p>
@@ -150,10 +188,13 @@ a.link{color:var(--gold)}
     <div id="retList"></div>
   </section>
 
+  </section>
+
   <!-- الإعدادات -->
   <section class="tab" id="t-settings">
+    <div id="setRoot"></div>
     <div class="card">
-      <h2>💾 النسخ الاحتياطي</h2>
+      <h2>💾 نسخة احتياطية لدفتر الفضل</h2>
       <p style="color:var(--muted);font-size:13px;margin-bottom:10px">البيانات محفوظة على هذا الجهاز فقط. خذ نسخة احتياطية دائماً، وانقلها بين الحاسبة والموبايل بالاستيراد.</p>
       <div class="actions">
         <button class="btn" onclick="exportJSON()">⬇️ تصدير نسخة احتياطية</button>
@@ -184,8 +225,8 @@ a.link{color:var(--gold)}
     <div class="card">
       <h2>ℹ️ حول</h2>
       <p style="line-height:2">
-        <b>سجل الفواتح IBRA</b> — لتسجيل أهل الفضل ورد الجميل · الإصدار 1.1.0<br>
-        <span style="color:var(--muted);font-size:13px;display:block;margin:6px 0">بالفاتحة يقف ويانا القريب والجار والصديق، كلٌّ بفضله. هذا التطبيق يحفظ أسماءهم ومبالغهم وتعريفهم سنين، حتى ما ينسى أحد فضل أحد ونرد الجميل بوقته، وتبقى الصلة والتكافل بين الناس.</span>
+        <b>فواتح ومناسبات IBRA</b> · <span id="verTxt" onclick="adminTap()" style="cursor:default">الإصدار</span><br>
+        <span style="color:var(--muted);font-size:13px;display:block;margin:6px 0">تطبيق يجمع شغلتين: <b style="color:var(--text)">دليل عام</b> تلكَى بيه مكان أي فاتحة أو مناسبة وموعدها ولوكيشنها حتى لو مو من منطقتك، و<b style="color:var(--text)">دفتر فضل خاص</b> يحفظ بجهازك أسماء اللي وقفوا وياك ومبالغهم حتى ترد الجميل بوقته.</span>
         برمجة وتطوير ابراهيم الخزرجي<br>
         🌐 موقع تطبيقاتي: <a class="link" href="https://ibraprogram.netlify.app/" target="_blank">ibraprogram.netlify.app</a><br>
         ✈️ تليكرام: <a class="link" href="https://t.me/ibraprogram" target="_blank">t.me/ibraprogram</a><br>
@@ -196,9 +237,9 @@ a.link{color:var(--gold)}
 </div>
 
 <nav>
-  <button class="on" data-t="list" onclick="go('list',this)"><span>📋</span>السجل</button>
-  <button data-t="events" onclick="go('events',this)"><span>🕊️</span>الفواتح</button>
-  <button data-t="return" onclick="go('return',this)"><span>🤝</span>رد الجميل</button>
+  <button class="on" data-t="dir" onclick="go('dir',this)"><span>🔍</span>الدليل</button>
+  <button data-t="post" onclick="go('post',this)"><span>📢</span>نشر مناسبة</button>
+  <button data-t="ledger" onclick="go('ledger',this)"><span>📒</span>دفتر الفضل</button>
   <button data-t="settings" onclick="go('settings',this)"><span>⚙️</span>الإعدادات</button>
 </nav>
 
@@ -294,6 +335,7 @@ a.link{color:var(--gold)}
 <script src="lib/html2canvas.min.js"></script>
 <script src="lib/jspdf.umd.min.js"></script>
 <script src="lib/icon-data.js"></script>
+<script src="config.js"></script>
 
 <script>
 const KEY='fawateh_db_v1';
@@ -317,13 +359,15 @@ function fmtInput(el){const n=num(el.value);el.value=n?fmt(n):''}
 function toast(t){const e=document.getElementById('toast');e.textContent=t;e.style.display='block';clearTimeout(e._t);e._t=setTimeout(()=>e.style.display='none',2000)}
 const ev=id=>db.events.find(e=>e.id===id);
 
-function go(t,b){document.querySelectorAll('.tab').forEach(x=>x.classList.remove('on'));document.getElementById('t-'+t).classList.add('on');
-  document.querySelectorAll('nav button').forEach(x=>x.classList.remove('on'));b.classList.add('on');render()}
+function go(t,b){b=b||document.querySelector(`nav button[data-t=${t}]`);document.querySelectorAll('.tab').forEach(x=>x.classList.remove('on'));document.getElementById('t-'+t).classList.add('on');
+  document.querySelectorAll('nav button').forEach(x=>x.classList.remove('on'));b&&b.classList.add('on');window.scrollTo(0,0);render();if(window.onTab)onTab(t)}
+function goL(l){go('ledger');document.querySelectorAll('.ltab').forEach(x=>x.classList.remove('on'));document.getElementById('t-'+l).classList.add('on');
+  document.querySelectorAll('.seg button').forEach(x=>x.classList.toggle('on',x.dataset.l===l));render()}
 function closeM(id){document.getElementById(id).classList.remove('on')}
 
 /* الفواتح */
 const DEFAULT_LINK='https://ibraprogram.netlify.app/';
-const appLink=()=>(db.appLink||DEFAULT_LINK).trim();
+const appLink=()=>(db.appLink||window.REMOTE_LINK||DEFAULT_LINK).trim();
 const evFrom=e=>e.from||e.date||'';
 const dShow=d=>d?d.split('-').reverse().join('/'):'';
 function evRange(e){const f=evFrom(e),t=e.to||'';return t&&t!==f?`من ${dShow(f)} إلى ${dShow(t)}`:dShow(f)}
@@ -346,7 +390,7 @@ function myLocation(){
     err=>toast(err.code===1?'اسمح للتطبيق باستخدام الموقع من الإعدادات':'تعذّر تحديد الموقع، شغّل GPS'),{enableHighAccuracy:true,timeout:15000})}
 function openLink(u){if(isNative){location.href=u;return}window.open(u,'_blank')}
 document.addEventListener('click',ev2=>{const a=ev2.target.closest&&ev2.target.closest('a[target=_blank]');if(a&&isNative){ev2.preventDefault();openLink(a.href)}});
-function setCur(id){db.cur=id;save();toast('تم اختيار الفاتحة');go('list',document.querySelector('nav button[data-t=list]'))}
+function setCur(id){db.cur=id;save();toast('تم اختيار الفاتحة');goL('list')}
 function editEvent(id){openEvent(id)}
 function delEvent(id){const c=db.people.filter(p=>p.eventId===id).length;
   if(!confirm(`حذف الفاتحة و ${c} شخص مسجل فيها؟`))return;
@@ -379,7 +423,7 @@ function shareMsg(e){const L=[];
   if(e.place)L.push(`📍 ${e.place}`);
   if(e.loc)L.push(`🗺️ الموقع: ${e.loc}`);
   if(e.note){L.push('');L.push(e.note)}
-  L.push('');L.push('📲 سجّل أهل الفضل وردّ الجميل بتطبيق سجل الفواتح IBRA:');L.push(appLink());
+  L.push('');L.push('📲 تطبيق فواتح ومناسبات IBRA — دليل الفواتح والمناسبات ودفتر الفضل:');L.push(appLink());
   return L.join('\n')}
 function openShare(id){shareEv=ev(id);shareText.value=shareMsg(shareEv);document.getElementById('mShare').classList.add('on')}
 async function copyText(t){try{await navigator.clipboard.writeText(t);return true}catch(e){const a=document.createElement('textarea');a.value=t;document.body.appendChild(a);a.select();let ok=false;try{ok=document.execCommand('copy')}catch(_){}a.remove();return ok}}
@@ -394,15 +438,15 @@ async function shareTo(w){const t=shareText.value;
 async function shareCard(){const e=shareEv;if(!e)return;
   const st=document.getElementById('cardStage');
   const rows=[e.tribe&&'🏷️ '+e.tribe,'📅 '+evRange(e),e.time&&'⏰ '+e.time,e.place&&'📍 '+e.place,e.loc&&'🗺️ الموقع بالرابط المرفق'].filter(Boolean);
-  st.innerHTML=`<img src="${window.ICON_DATA||'icon.png'}"><div class="t1">إنا لله وإنا إليه راجعون</div><div class="t2">فاتحة ${esc(e.name)}</div>
+  st.innerHTML=`<img src="${window.ICON_DATA||'icon.png'}"><div class="t1">${esc(e.cardTop||'إنا لله وإنا إليه راجعون')}</div><div class="t2">${esc(e.cardTitle||('فاتحة '+e.name))}</div>
    <div class="rows">${rows.map(r=>`<div class="r">${esc(r)}</div>`).join('')}</div>
    ${e.note?`<div class="t3" style="margin-top:30px;font-size:34px">${esc(e.note)}</div>`:''}
-   <div class="ft">سجل الفواتح IBRA · ${esc(appLink().replace(/^https?:\/\//,'').replace(/\/$/,''))}</div>`;
+   <div class="ft">فواتح ومناسبات IBRA · ${esc(appLink().replace(/^https?:\/\//,'').replace(/\/$/,''))}</div>`;
   toast('جاري تجهيز البطاقة...');
   try{await document.fonts.ready;const c=await html2canvas(st,{scale:1,backgroundColor:null,width:1080,height:1350});
     const blob=await new Promise(r=>c.toBlob(r,'image/jpeg',0.93));
     await copyText(shareText.value);
-    await download(`فاتحة-${e.name.replace(/[\\/:*?"<>|]/g,'')}.jpg`,blob,'image/jpeg');
+    await download(`${(e.cardTitle||'فاتحة').split(' ')[0]}-${e.name.replace(/[\\/:*?"<>|]/g,'')}.jpg`,blob,'image/jpeg');
     if(!isNative)toast('تم حفظ الصورة، والنص منسوخ ✔')
   }catch(err){toast('تعذّر إنشاء البطاقة')}finally{st.innerHTML=''}}
 function saveLink(){const v=document.getElementById('appLinkIn').value.trim();db.appLink=v&&v!==DEFAULT_LINK?v:'';save();document.getElementById('appLinkIn').value=appLink();toast('تم حفظ الرابط')}
@@ -410,7 +454,7 @@ function saveLink(){const v=document.getElementById('appLinkIn').value.trim();db
 /* الأشخاص */
 function fillEventSelect(sel){if(!db.events.length)return;document.getElementById('pEvent').innerHTML=db.events.map(e=>`<option value="${e.id}" ${e.id===sel?'selected':''}>${esc(e.name)}</option>`).join('')}
 function openPerson(id){
-  if(!db.events.length){toast('أضف فاتحة أولاً');go('events',document.querySelector('nav button[data-t=events]'));return}
+  if(!db.events.length){toast('أضف فاتحة أولاً');goL('events');return}
   const p=id?db.people.find(x=>x.id===id):null;
   document.getElementById('mTitle').textContent=p?'تعديل البيانات':'تسجيل شخص';
   fillEventSelect(p?p.eventId:db.cur);
@@ -472,7 +516,7 @@ function filtered(){
 }
 function renderList(){
   const e=ev(db.cur);
-  document.getElementById('curEventLbl').textContent=e?`الفاتحة الحالية: ${e.name} — ${evRange(e)}`:'لا توجد فاتحة محددة — أضف فاتحة من تبويب الفواتح';
+  document.getElementById('curEventLbl').textContent=e?`المناسبة الحالية: ${e.name} — ${evRange(e)}`:'لا توجد مناسبة — أضفها من تبويب "مناسباتي"';
   const ps=filtered();const sc=document.getElementById('fScope').value;
   document.getElementById('sCount').textContent=ps.length;
   document.getElementById('sTotal').textContent=fmt(ps.reduce((a,p)=>a+(p.amount||0),0));
@@ -509,14 +553,14 @@ function buildPrint(){
   const ps=filtered();if(!ps.length){toast('لا يوجد مسجلين بهذا العرض');return false}
   const sc=document.getElementById('fScope').value,e=ev(db.cur);
   const tot=ps.reduce((a,p)=>a+(p.amount||0),0);
-  const title=sc==='all'?'سجل الفواتح — جميع الفواتح':`سجل فاتحة ${e?e.name:''}`;
+  const title=sc==='all'?'دفتر الفضل — جميع المناسبات':`دفتر الفضل — ${e?e.name:''}`;
   document.getElementById('printArea').innerHTML=`
   <h1>${esc(title)}</h1>
   <div class="sub">${db.family?esc(db.family)+' · ':''}${sc!=='all'&&e?(e.tribe?esc(e.tribe)+' · ':'')+esc(evRange(e))+(e.place?' · '+esc(e.place):''):''} · عدد المسجلين: ${ps.length}</div>
   <table><thead><tr><th>#</th><th>الاسم</th><th>القرابة / التعريف</th><th>الموبايل</th><th>المنطقة</th><th>النوع</th><th>المبلغ</th>${sc==='all'?'<th>الفاتحة</th>':''}<th>رد الجميل</th></tr></thead>
   <tbody>${ps.map((p,i)=>`<tr><td>${i+1}</td><td>${esc(p.name)}</td><td>${esc(p.rel)}</td><td>${esc(p.phone)}</td><td>${esc(p.area)}</td><td>${esc(p.kind)}</td><td>${p.amount?fmt(p.amount):''}</td>${sc==='all'?`<td>${esc(ev(p.eventId)?.name||'')}</td>`:''}<td>${p.returned?'✔ '+esc(p.returnDate||''):''}</td></tr>`).join('')}</tbody>
   <tfoot><tr><td colspan="6">المجموع</td><td>${fmt(tot)} د.ع</td><td colspan="${sc==='all'?2:1}"></td></tr></tfoot></table>
-  <div class="foot">طُبع بتاريخ ${today()} · سجل الفواتح IBRA — برمجة وتطوير ابراهيم الخزرجي</div>`;
+  <div class="foot">طُبع بتاريخ ${today()} · فواتح ومناسبات IBRA — برمجة وتطوير ابراهيم الخزرجي</div>`;
   return true;
 }
 function printList(){if(isNative)return pdfList();if(buildPrint())setTimeout(()=>window.print(),150)}
@@ -565,7 +609,9 @@ function render(){renderList();renderEvents();renderReturn();document.getElement
 document.querySelectorAll('.modal').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('on')}));
 load();render();loadNative();
 if(isNative&&Plug('App'))Plug('App').addListener('backButton',()=>{const m=document.querySelector('.modal.on');if(m){m.classList.remove('on');return}
-  const t=document.querySelector('.tab.on');if(t&&t.id!=='t-list'){go('list',document.querySelector('nav button[data-t=list]'));return}Plug('App').exitApp()});
+  const t=document.querySelector('.tab.on');if(t&&t.id!=='t-dir'){go('dir');return}Plug('App').exitApp()});
 </script>
+<div id="onb"></div>
+<script src="dir.js"></script>
 </body>
 </html>
