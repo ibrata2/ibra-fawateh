@@ -125,9 +125,9 @@ function renderDir(){
          <option value="new" ${f.sort==='new'?'selected':''}>🆕 الأحدث نشراً</option></select>
      </div>
    </div>
-   <div style="display:flex;justify-content:space-between;align-items:center;margin:4px 2px 8px;font-size:12px;color:var(--muted)">
-     <span>${LOADING?'⏳ جاري التحديث...':`${list.length} مناسبة`}${d.cacheAt&&!LOADING?' · آخر تحديث '+new Date(d.cacheAt).toLocaleTimeString('ar-IQ',{hour:'2-digit',minute:'2-digit'}):''}</span>
-     <span><button class="btn sec sm" onclick="DIR.mapAll()">🗺️ خريطة</button> <button class="btn sec sm" onclick="DIR.openLinkBox()">🔗 فتح رابط</button> <button class="btn sec sm" onclick="DIR.reload()">🔄 تحديث</button></span>
+   <div style="display:flex;justify-content:space-between;align-items:center;gap:6px;margin:4px 2px 8px;font-size:12px;color:var(--muted)">
+     <span>${LOADING?'⏳ جاري التحديث...':`${list.length} مناسبة`}${d.cacheAt&&!LOADING?'<br><small style="font-size:10px">آخر تحديث '+new Date(d.cacheAt).toLocaleTimeString('ar-IQ',{hour:'2-digit',minute:'2-digit'})+'</small>':''}</span>
+     <span style="display:flex;gap:4px;flex-shrink:0"><button class="btn sec sm" onclick="DIR.mapAll()">🗺️ خريطة</button><button class="btn sec sm" onclick="DIR.openLinkBox()" title="فتح رابط مناسبة">🔗 رابط</button><button class="btn sec sm" onclick="DIR.reload()" title="تحديث">🔄</button></span>
    </div>
    ${LAST_ERR==='config'?`<div class="banner">⚙️ الدليل العام قيد التجهيز. دفتر الفضل يشتغل عادي.</div>`:LAST_ERR?`<div class="banner">⚠️ ${esc(LAST_ERR)}${EVENTS.length?' — تعرض آخر نسخة محفوظة':''}</div>`:''}
    ${receivedHtml()}
