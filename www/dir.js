@@ -79,7 +79,7 @@ function visible(){
   if(f.province)list=list.filter(e=>e.province===f.province);
   if(f.venue)list=list.filter(e=>e.venue_type===f.venue);
   if(f.tribe){const tk=tkey(f.tribe);list=list.filter(e=>e.tribe&&tkey(e.tribe).includes(tk))}
-  if(q.length)list=list.filter(e=>{const h=norm([e.title,e.tribe,e.province,e.area,e.venue,e.note,KINDS[e.kind]?.[1],VENUES[e.venue_type]?.[1]].join(' '));return q.every(w=>h.includes(w))});
+  if(q.length)list=list.filter(e=>{const h=norm([e.title,e.relatives,e.tribe,e.province,e.area,e.venue,e.note,KINDS[e.kind]?.[1],VENUES[e.venue_type]?.[1]].join(' '));return q.every(w=>h.includes(w))});
   const me=d.notif;list.forEach(e=>{e._d=(me.lat!=null&&e.lat!=null)?dist(me.lat,me.lng,e.lat,e.lng):null});
   const now=e=>String(e.date_from).slice(0,10)<=today;
   if(f.sort==='near'&&me.lat!=null)list.sort((a,b)=>(a._d??1e9)-(b._d??1e9));
@@ -94,6 +94,7 @@ function evCard(e){
    <span class="st ${live?'now':'soon'}">${live?'● اليوم':'قادمة'}</span>
    <span class="k ${kcls(e.kind)}">${k[0]} ${k[1]}</span>${e.visibility==='private'?' <span class="k" style="background:var(--card2);color:var(--muted);border-color:var(--line)">🔒 خاصة</span>':''}
    <h3>${esc(e.title)}</h3>
+   ${e.relatives?`<div class="m" style="color:var(--text);white-space:pre-line">👨‍👧‍👦 ${esc(e.relatives)}</div>`:''}
    ${e.tribe?`<div class="m" style="color:var(--gold)">🏷️ ${esc(e.tribe)}</div>`:''}
    <div class="m">📍 ${esc(e.province)}${e.area?' · '+esc(e.area):''}${e._d!=null?` · <b style="color:var(--text)">${e._d<1?Math.round(e._d*1000)+' م':e._d.toFixed(1)+' كم'}</b>`:''}</div>
    ${(v||e.venue)?`<div class="m">${v?v[0]+' '+v[1]:'📍'}${e.venue?' — '+esc(e.venue):''}</div>`:''}
@@ -167,6 +168,8 @@ function renderPost(e){
      <div class="mb"><label>نوع المناسبة</label><div class="chips" id="pkChips">${Object.entries(KINDS).map(([k,v])=>`<button type="button" class="chip ${k===kind?'on':''}" data-k="${k}" onclick="DIR.pk('${k}')">${v[0]} ${v[1]}</button>`).join('')}</div></div>
      <input type="hidden" id="pkKind" value="${kind}">
      <div class="mb"><label id="pkTitleL">${TITLE_LABEL[kind]} *</label><input id="pkTitle" maxlength="120" placeholder="${TITLE_PH[kind]}" value="${esc(e.title||'')}"></div>
+     <div class="mb" id="pkRelBox" style="${HAS_REL(kind)?'':'display:none'}"><label>👨‍👧‍👦 صلة القرابة (والد كل من… أخ كل من…)</label>${relEditorHtml('pkRel',e.relatives)}
+       <small style="color:var(--muted);font-size:11px">تساعد الناس تلكَى الفاتحة إذا يعرفون أولاد المرحوم أو إخوانه، والبحث يشملها.</small></div>
      <div class="mb"><label>العشيرة</label>${tribeField('pkTribe',e.tribe)}</div>
      <div class="row mb">
        <div><label>المحافظة *</label><select id="pkProv">${PROVINCES.map(p=>`<option ${(e.province||st().notif.province||'بغداد')===p?'selected':''}>${p}</option>`).join('')}</select></div>
@@ -207,7 +210,7 @@ async function submit(){
   const locRaw=v('pkLoc'),ll=parseLoc(locRaw);
   const p={kind:v('pkKind'),title,tribe:v('pkTribe'),province:v('pkProv'),area:v('pkArea'),venue_type:v('pkVT'),venue:v('pkVenue'),
     date_from:from,date_to:to||from,time_text:v('pkTime'),lat:ll?String(ll.lat):'',lng:ll?String(ll.lng):'',loc_url:ll?'':(/^https?:\/\//i.test(locRaw)?locRaw:''),
-    note:v('pkNote'),contact:v('pkContact'),visibility:v('pkVis'),reach_km:v('pkVis')==='public'?v('pkReach'):'',poster_name:v('pkPoster')};
+    note:v('pkNote'),contact:v('pkContact'),visibility:v('pkVis'),reach_km:v('pkVis')==='public'?v('pkReach'):'',poster_name:v('pkPoster'),relatives:HAS_REL(v('pkKind'))?relRead('pkRel'):''};
   if(p.poster_name.length<2)return toast('اكتب اسم الناشر');
   const pr=st().profile;if(!pr.name){pr.name=p.poster_name;if(!pr.phone&&p.contact)pr.phone=p.contact}
   const btn=$('pkBtn');btn.disabled=true;btn.textContent='⏳ جاري الإرسال...';
@@ -215,7 +218,7 @@ async function submit(){
   try{
     if(EDIT_ID){const ok=await rpc('update_event',{p_id:EDIT_ID,p,p_token:d.token});if(!ok)throw new Error('ما تكدر تعدّل هذا المنشور');toast('تم حفظ التعديل ✔');await fetchEv(EDIT_ID);EDIT_ID=null}
     else{const id=await rpc('add_event',{p,p_token:d.token});d.mine[id]=Date.now();d.seen[id]=1;
-      if($('pkLedger')?.checked){const le={id:uid(),name:(p.kind==='fatiha'?'':KINDS[p.kind][1]+' ')+title,tribe:p.tribe,from,to:to,date:from,place:[VENUES[p.venue_type]?.[1],p.venue,p.area].filter(Boolean).join(' - '),time:p.time_text,loc:ll?`https://maps.google.com/?q=${ll.lat},${ll.lng}`:p.loc_url,note:p.note};db.events.unshift(le);db.cur=le.id}
+      if($('pkLedger')?.checked){const le={id:uid(),relatives:p.relatives,name:(p.kind==='fatiha'?'':KINDS[p.kind][1]+' ')+title,tribe:p.tribe,from,to:to,date:from,place:[VENUES[p.venue_type]?.[1],p.venue,p.area].filter(Boolean).join(' - '),time:p.time_text,loc:ll?`https://maps.google.com/?q=${ll.lat},${ll.lng}`:p.loc_url,note:p.note};db.events.unshift(le);db.cur=le.id}
       d.postsCount=(d.postsCount||0)+1;save();toast(p.visibility==='private'?'تم النشر ✔ أرسل الرابط للناس اللي تريدهم':'تم النشر ✔');await fetchEv(id);
       await loadEvents(true);renderPost();go('dir');setTimeout(()=>{share(id);maybeSupport()},300);return}
     save();await loadEvents(true);renderPost();go('dir')
@@ -233,6 +236,7 @@ function share(id){const e=EVENTS.find(x=>x.id===id)||st().privCache[id];if(!e)r
   const k=KINDS[e.kind]||KINDS.other,v=VENUES[e.venue_type],loc=mapUrl(e);
   const L=[];if(SORROW(e.kind)&&e.kind!=='majlis'){L.push('إنا لله وإنا إليه راجعون');L.push('')}
   L.push(`${k[0]} ${e.kind==='fatiha'?'فاتحة ':k[1]+' · '}${e.title}`);
+  if(e.relatives)e.relatives.split('\n').forEach(r=>L.push(`👨‍👧‍👦 ${r}`));
   if(e.tribe)L.push(`🏷️ ${e.tribe}`);
   L.push(`📍 ${e.province}${e.area?' - '+e.area:''}`);
   if(v||e.venue)L.push(`${v?v[0]+' '+v[1]:'📍'}${e.venue?': '+e.venue:''}`);
@@ -240,9 +244,27 @@ function share(id){const e=EVENTS.find(x=>x.id===id)||st().privCache[id];if(!e)r
   if(loc)L.push(`🗺️ الموقع: ${loc}`);if(e.contact)L.push(`📞 ${e.contact}`);if(e.note){L.push('');L.push(e.note)}
   L.push('');L.push('🔗 التفاصيل والموقع: '+evLink(e.id));L.push('');L.push('📲 تطبيق فواتح ومناسبات IBRA:');L.push(appLink());
   shareText.value=L.join('\n');
-  shareEv={name:e.title,tribe:e.tribe,from:String(e.date_from).slice(0,10),to:String(e.date_to).slice(0,10),time:e.time_text,place:[v?.[1],e.venue,e.area,e.province].filter(Boolean).join(' - '),loc,note:e.note,
+  shareEv={name:e.title,relatives:e.relatives,tribe:e.tribe,from:String(e.date_from).slice(0,10),to:String(e.date_to).slice(0,10),time:e.time_text,place:[v?.[1],e.venue,e.area,e.province].filter(Boolean).join(' - '),loc,note:e.note,
     cardTitle:(e.kind==='fatiha'?'فاتحة ':k[1]+' ')+e.title,cardTop:SORROW(e.kind)&&e.kind!=='majlis'?'إنا لله وإنا إليه راجعون':e.kind==='majlis'||e.kind==='religious'?'السلام على الحسين وعلى أولاد الحسين':'ألف مبروك 🎊'};
   $('mShare').classList.add('on')}
+
+/* ---------- صلة القرابة للمتوفى ---------- */
+const RELS=['والد','والدة','أخ','أخت','زوج','زوجة','ابن','ابنة','جد','جدة','عم','عمة','خال','خالة'];
+const HAS_REL=k=>k==='fatiha'||k==='memorial';
+function relParse(text){return String(text||'').split('\n').map(l=>l.trim()).filter(Boolean).map(l=>{
+  const m=l.match(/^(\S+)\s+(?:كل من\s+)?(.+)$/);if(!m||!RELS.includes(m[1]))return {rel:'والد',names:l};
+  return {rel:m[1],names:m[2].split(/\s+و\s*|،|,/).map(x=>x.trim()).filter(Boolean).join('، ')}})}
+function relCompose(rows){return rows.map(r=>{const n=String(r.names||'').split(/[،,]|\s+و\s+/).map(x=>x.trim()).filter(Boolean);
+  if(!n.length)return '';return n.length>1?`${r.rel} كل من ${n.slice(0,-1).join(' و ')} و ${n[n.length-1]}`:`${r.rel} ${n[0]}`}).filter(Boolean).join('\n')}
+function relRowHtml(px,r,i){return `<div class="relrow" style="display:flex;gap:6px;margin-bottom:6px">
+  <select data-k="rel" style="width:auto;flex-shrink:0">${RELS.map(x=>`<option ${x===r.rel?'selected':''}>${x}</option>`).join('')}</select>
+  <input data-k="names" placeholder="الأسماء بينها فاصلة: علي، حسن، محمد" value="${esc(r.names||'')}" style="flex:1" oninput="DIR.relPrev('${px}')">
+  <button type="button" class="btn red sm" onclick="this.parentElement.remove();DIR.relPrev('${px}')">✕</button></div>`}
+function relEditorHtml(px,text){const rows=relParse(text);if(!rows.length)rows.push({rel:'والد',names:''});
+  return `<div id="${px}Rows">${rows.map((r,i)=>relRowHtml(px,r,i)).join('')}</div>
+   <button type="button" class="btn sec sm" onclick="DIR.relAdd('${px}')">➕ إضافة صلة</button>
+   <div id="${px}Prev" style="font-size:12px;color:var(--gold);margin-top:6px;white-space:pre-line">${esc(relCompose(rows))}</div>`}
+function relRead(px){const box=$(px+'Rows');if(!box)return '';return relCompose([...box.querySelectorAll('.relrow')].map(r=>({rel:r.querySelector('[data-k=rel]').value,names:r.querySelector('[data-k=names]').value})))}
 
 /* ---------- اختيار العشيرة ---------- */
 const tkey=t=>norm(t).replace(/^عشيره\s+/,'').replace(/^(ال|آل\s*)/,'').replace(/\s+/g,'');
@@ -391,7 +413,7 @@ let qT=null;
 window.DIR={
   open:u=>openLink(u),share,edit:editEv,del:delEv,report,myLoc,submit,
   cancelEdit:()=>{EDIT_ID=null;renderPost()},
-  pk:k=>{$('pkKind').value=k;document.querySelectorAll('#pkChips .chip').forEach(c=>c.classList.toggle('on',c.dataset.k===k));$('pkTitleL').textContent=TITLE_LABEL[k]+' *';$('pkTitle').placeholder=TITLE_PH[k];$('pkVT').value=(SORROW(k)||k==='religious')?(k==='religious'?'mosque':'husseiniya'):'hall'},
+  pk:k=>{$('pkKind').value=k;if($('pkRelBox'))$('pkRelBox').style.display=HAS_REL(k)?'':'none';document.querySelectorAll('#pkChips .chip').forEach(c=>c.classList.toggle('on',c.dataset.k===k));$('pkTitleL').textContent=TITLE_LABEL[k]+' *';$('pkTitle').placeholder=TITLE_PH[k];$('pkVT').value=(SORROW(k)||k==='religious')?(k==='religious'?'mosque':'husseiniya'):'hall'},
   q:v=>{st().filter.q=v;clearTimeout(qT);qT=setTimeout(()=>{DIR._focus=true;renderDir();DIR._focus=false},200)},
   setF:(k,v)=>{st().filter[k]=v;save();renderDir()},
   sort:async v=>{st().filter.sort=v;save();if(v==='near'&&st().notif.lat==null)await refreshMyLoc();renderDir()},
@@ -410,6 +432,10 @@ window.DIR={
   followTribes:()=>tribePick({multi:true,selected:st().notif.tribes||[],done:list=>{st().notif.tribes=list;save();renderSettings();toast('تم الحفظ ✔')}}),
   tribeFilter:()=>{if(st().filter.tribe){st().filter.tribe='';save();return renderDir()}tribePick({done:t=>{st().filter.tribe=t;save();renderDir()}})},
   tpq:v=>{TP.q=v;renderTP()},
+  relAdd:px=>{const b=$(px+'Rows');b.insertAdjacentHTML('beforeend',relRowHtml(px,{rel:'أخ',names:''},b.children.length))},
+  relPrev:px=>{const p=$(px+'Prev');if(p)p.textContent=relRead(px)},
+  relMount:(px,text)=>{const b=$(px+'Box');if(b)b.innerHTML=relEditorHtml(px,text)},
+  relRead:px=>relRead(px),
   tpI:i=>DIR.tpPick(TP.view[i]),
   tpS:i=>DIR.tpPick(TP.selView[i]),
   tpPick:t=>{if(!TP)return;if(TP.multi){TP.sel.has(t)?TP.sel.delete(t):TP.sel.add(t);renderTP()}else{closeM('mGen');TP.done(t);TP=null}},
