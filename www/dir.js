@@ -17,7 +17,7 @@ const evLink=id=>WEB+'?e='+id;
 const VENUES={house:['🏠','دار / بيت'],husseiniya:['🕌','حسينية'],mosque:['🕌','جامع'],hall:['🏛️','قاعة'],madhif:['⛺','مضيف'],other:['📍','مكان آخر']};
 const PROVINCES=['بغداد','البصرة','نينوى','أربيل','النجف','كربلاء','بابل','ذي قار','ميسان','واسط','الديوانية','المثنى','الأنبار','ديالى','صلاح الدين','كركوك','السليمانية','دهوك','حلبجة','خارج العراق'];
 const TITLE_LABEL={fatiha:'اسم المرحوم / المرحومة',majlis:'عنوان المجلس أو صاحبه',memorial:'اسم المرحوم / المرحومة',religious:'اسم المناسبة',wedding:'اسم العريس (أو صاحب العرس)',tuhur:'اسم الطفل أو صاحب المناسبة',engagement:'اسم صاحب المناسبة',birth:'اسم المولود أو الأب',hajj:'اسم الحاج / المعتمر',other:'اسم صاحب المناسبة'};
-const TITLE_PH={fatiha:'مثال: المرحوم الحاج علي حسين',majlis:'مثال: مجلس عزاء الإمام الحسين (ع) — دار الحاج كاظم',memorial:'مثال: أربعينية المرحوم علي حسين',religious:'مثال: مولد الإمام علي (ع)',wedding:'مثال: عرس حيدر علي',tuhur:'مثال: طهور محمد ابن علي',engagement:'مثال: خطوبة مصطفى',birth:'مثال: مولود أبو حسين',hajj:'مثال: الحاج كاظم جبار',other:'مثال: مناسبة آل فلان'};
+const TITLE_PH={fatiha:'مثال: المرحوم الحاج علي حسين',majlis:'مثال: مجلس عزاء الإمام الحسين (ع) — دار الحاج كاظم',memorial:'مثال: أربعينية المرحوم علي حسين',religious:'مثال: مولد الإمام علي (ع)',wedding:'مثال: عرس حيدر علي',tuhur:'مثال: طهور محمد ابن علي',engagement:'مثال: خطوبة مصطفى',birth:'مثال: مولود أبو حسين',hajj:'مثال: الحاج كاظم جبار',other:'مثال: مناسبة العشيرة الفلانية'};
 
 /* ---------- حالة محلية ---------- */
 function st(){ if(!db.dir) db.dir={}; const d=db.dir;
@@ -165,7 +165,7 @@ function renderPost(e){
      <div class="mb"><label>نوع المناسبة</label><div class="chips" id="pkChips">${Object.entries(KINDS).map(([k,v])=>`<button type="button" class="chip ${k===kind?'on':''}" data-k="${k}" onclick="DIR.pk('${k}')">${v[0]} ${v[1]}</button>`).join('')}</div></div>
      <input type="hidden" id="pkKind" value="${kind}">
      <div class="mb"><label id="pkTitleL">${TITLE_LABEL[kind]} *</label><input id="pkTitle" maxlength="120" placeholder="${TITLE_PH[kind]}" value="${esc(e.title||'')}"></div>
-     <div class="mb"><label>العشيرة</label><input id="pkTribe" maxlength="80" placeholder="مثال: آل فلان" value="${esc(e.tribe||'')}"></div>
+     <div class="mb"><label>العشيرة</label><input id="pkTribe" maxlength="80" placeholder="مثال: العشيرة الفلانية" value="${esc(e.tribe||'')}"></div>
      <div class="row mb">
        <div><label>المحافظة *</label><select id="pkProv">${PROVINCES.map(p=>`<option ${(e.province||st().notif.province||'بغداد')===p?'selected':''}>${p}</option>`).join('')}</select></div>
        <div><label>المنطقة</label><input id="pkArea" maxlength="80" placeholder="مثال: بغداد الجديدة" value="${esc(e.area||'')}"></div>
@@ -304,7 +304,7 @@ function renderSettings(){const root=$('setRoot');if(!root)return;const n=st().n
      <div class="sw"><span style="font-size:13px">${n.lat!=null?'✅ موقعك محفوظ':'⚠️ موقعك غير محدد'}</span><button class="btn sec sm" onclick="DIR.myPos()">📍 حدّث موقعي</button></div>
      <div class="sw"><span>🏙️ محافظتي</span><select style="width:auto" onchange="DIR.nset('province',this.value)"><option value="">—</option>${PROVINCES.map(p=>`<option ${n.province===p?'selected':''}>${p}</option>`).join('')}</select></div>
      <div class="mb" style="margin-top:8px"><label>منطقتي (اختياري — حتى تجيك مناسبات منطقتك بس)</label><input value="${esc(n.area||'')}" placeholder="مثال: بغداد الجديدة" onchange="DIR.nset('area',this.value.trim())"></div>
-     <div class="mb"><label>🏷️ العشائر اللي أتابعها (افصل بفاصلة)</label><input value="${esc((n.tribes||[]).join('، '))}" placeholder="مثال: آل فلان، الجبور" onchange="DIR.nset('tribes',this.value.split(/[،,]/).map(s=>s.trim()).filter(Boolean))"></div>
+     <div class="mb"><label>🏷️ العشائر اللي أتابعها (افصل بفاصلة)</label><input value="${esc((n.tribes||[]).join('، '))}" placeholder="مثال: العشيرة الفلانية، العشيرة الفلانية" onchange="DIR.nset('tribes',this.value.split(/[،,]/).map(s=>s.trim()).filter(Boolean))"></div>
      <p style="font-size:11px;color:var(--muted)">يوصلك إشعار بأي مناسبة جديدة قريبة منك، أو بمحافظتك ومنطقتك، أو لعشيرة تتابعها. الإشعار يوصل لمن التطبيق مفتوح أو تفتحه.</p>
      <button class="btn sec sm" onclick="DIR.testN()">🔔 تجربة إشعار</button>
    </div>
