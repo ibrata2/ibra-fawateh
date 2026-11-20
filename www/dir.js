@@ -318,7 +318,7 @@ function renderSettings(){const root=$('setRoot');if(!root)return;const n=st().n
   const pr=st().profile;
   root.innerHTML=`
    <div class="card"><h2>👤 حسابي</h2>
-     <div class="row mb"><div><label>الاسم (عربي أو English)</label><input value="${esc(pr.name)}" maxlength="60" placeholder="مثال: ابراهيم الخزرجي" onchange="DIR.prof('name',this.value.trim())"></div>
+     <div class="row mb"><div><label>الاسم (عربي أو English)</label><input value="${esc(pr.name)}" maxlength="60" placeholder="مثال: علي حسن" onchange="DIR.prof('name',this.value.trim())"></div>
      <div><label>رقم الموبايل</label><input type="tel" inputmode="tel" value="${esc(pr.phone)}" maxlength="20" placeholder="07xxxxxxxxx" onchange="DIR.prof('phone',this.value.trim())"></div></div>
      <p style="font-size:11px;color:var(--muted)">يطلع اسمك كناشر للمناسبات، والرقم يتعبّى تلقائياً للتواصل. محفوظين بجهازك.</p></div>
    ${UPD?`<div class="banner">⬆️ إصدار جديد ${esc(UPD.ver)} متوفر <button class="btn sm" onclick="openUpdate()">تحديث</button></div>`:''}
