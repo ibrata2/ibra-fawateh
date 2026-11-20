@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="سجل الفواتح">
+<meta name="theme-color" content="#0f1714">
+<title>سجل الفواتح IBRA</title>
+<style>
+@font-face{font-family:'Cairo';font-weight:400;src:url(fonts/cairo-arabic-400-normal.woff2) format('woff2');unicode-range:U+0600-06FF,U+0750-077F,U+08A0-08FF,U+FB50-FDFF,U+FE70-FEFF}
+@font-face{font-family:'Cairo';font-weight:700;src:url(fonts/cairo-arabic-700-normal.woff2) format('woff2');unicode-range:U+0600-06FF,U+0750-077F,U+08A0-08FF,U+FB50-FDFF,U+FE70-FEFF}
+@font-face{font-family:'Cairo';font-weight:800;src:url(fonts/cairo-arabic-800-normal.woff2) format('woff2');unicode-range:U+0600-06FF,U+0750-077F,U+08A0-08FF,U+FB50-FDFF,U+FE70-FEFF}
+@font-face{font-family:'Cairo';font-weight:400;src:url(fonts/cairo-latin-400-normal.woff2) format('woff2');unicode-range:U+0000-00FF,U+2000-206F}
+@font-face{font-family:'Cairo';font-weight:700;src:url(fonts/cairo-latin-700-normal.woff2) format('woff2');unicode-range:U+0000-00FF,U+2000-206F}
+@font-face{font-family:'Cairo';font-weight:800;src:url(fonts/cairo-latin-800-normal.woff2) format('woff2');unicode-range:U+0000-00FF,U+2000-206F}
+:root{
+  --bg:#0f1714; --card:#17221d; --card2:#1d2b25; --line:#2a3b33;
+  --text:#eef3ef; --muted:#9fb3a8; --gold:#d4b46a; --gold2:#b8954a;
+  --green:#3fae7a; --red:#e06b6b; --blue:#5aa2e0;
+}
+*{box-sizing:border-box;margin:0;padding:0;font-family:'Cairo',Tahoma,sans-serif}
+body{background:var(--bg);color:var(--text);min-height:100vh;padding-bottom:80px}
+header{background:linear-gradient(135deg,#14211b,#0f1714);border-bottom:1px solid var(--line);padding:14px 16px;padding-top:calc(14px + env(safe-area-inset-top));position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:12px}
+header img{width:42px;height:42px;border-radius:11px}
+header h1{font-size:20px;color:var(--gold);font-weight:800}
+header p{font-size:12px;color:var(--muted)}
+.wrap{max-width:1000px;margin:auto;padding:14px 16px}
+nav{position:fixed;bottom:0;left:0;right:0;background:#0b120f;border-top:1px solid var(--line);display:flex;z-index:30;padding-bottom:env(safe-area-inset-bottom)}
+nav button{flex:1;background:none;border:none;color:var(--muted);padding:10px 4px;font-size:12px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px}
+nav button span{font-size:20px}
+nav button.on{color:var(--gold)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px}
+.row{display:flex;gap:10px;flex-wrap:wrap}
+.row>*{flex:1;min-width:140px}
+label{font-size:13px;color:var(--muted);display:block;margin-bottom:4px}
+input,select,textarea{width:100%;background:var(--card2);border:1px solid var(--line);color:var(--text);border-radius:10px;padding:10px;font-size:15px;outline:none}
+input:focus,select:focus,textarea:focus{border-color:var(--gold)}
+textarea{min-height:60px;resize:vertical}
+.btn{background:var(--gold);color:#1a1408;border:none;border-radius:10px;padding:10px 16px;font-weight:700;font-size:14px;cursor:pointer}
+.btn.sec{background:var(--card2);color:var(--text);border:1px solid var(--line)}
+.btn.red{background:var(--red);color:#fff}
+.btn.grn{background:var(--green);color:#fff}
+.btn.sm{padding:6px 10px;font-size:12px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:12px}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px;text-align:center}
+.stat b{display:block;font-size:20px;color:var(--gold)}
+.stat small{color:var(--muted);font-size:12px}
+.person{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:10px;display:flex;gap:12px;align-items:flex-start}
+.avatar{width:44px;height:44px;border-radius:50%;background:var(--card2);border:1px solid var(--gold2);display:flex;align-items:center;justify-content:center;color:var(--gold);font-weight:800;flex-shrink:0}
+.pinfo{flex:1;min-width:0}
+.pinfo h3{font-size:16px}
+.pinfo .meta{font-size:12px;color:var(--muted);margin-top:2px}
+.amt{color:var(--gold);font-weight:800;font-size:16px;white-space:nowrap}
+.tag{display:inline-block;font-size:11px;padding:2px 8px;border-radius:20px;background:var(--card2);border:1px solid var(--line);margin-top:4px;margin-left:4px}
+.tag.done{background:rgba(63,174,122,.15);color:var(--green);border-color:var(--green)}
+.tag.wait{background:rgba(212,180,106,.12);color:var(--gold);border-color:var(--gold2)}
+.actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.empty{text-align:center;color:var(--muted);padding:30px 10px}
+.tab{display:none}.tab.on{display:block}
+h2{font-size:17px;margin-bottom:10px;color:var(--gold)}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.65);display:none;align-items:flex-end;justify-content:center;z-index:50}
+.modal.on{display:flex}
+.sheet{background:var(--card);width:100%;max-width:600px;max-height:92vh;overflow:auto;border-radius:18px 18px 0 0;padding:18px;border:1px solid var(--line)}
+@media(min-width:700px){.modal{align-items:center}.sheet{border-radius:18px}}
+.sheet h2{display:flex;justify-content:space-between;align-items:center}
+.x{background:none;border:none;color:var(--muted);font-size:24px;cursor:pointer}
+.mb{margin-bottom:10px}
+.toast{position:fixed;top:16px;left:50%;transform:translateX(-50%);background:var(--gold);color:#1a1408;padding:10px 18px;border-radius:10px;font-weight:700;z-index:99;display:none}
+.event-item{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.event-item.cur{border-color:var(--gold)}
+a.link{color:var(--gold)}
+#printArea{display:none}
+#pdfStage{position:fixed;top:0;left:-10000px;width:794px;background:#fff;color:#000;padding:30px;direction:rtl}
+#pdfStage h1{text-align:center;font-size:22px;margin-bottom:4px}#pdfStage .sub{text-align:center;font-size:13px;margin-bottom:12px;color:#333}#pdfStage table{width:100%;border-collapse:collapse;font-size:12px}#pdfStage th,#pdfStage td{border:1px solid #444;padding:5px;text-align:right}#pdfStage th{background:#eee}#pdfStage tfoot td{font-weight:bold;background:#f5f5f5}#pdfStage .foot{margin-top:10px;font-size:11px;text-align:center;color:#555}
+@media print{
+  body{background:#fff;color:#000;padding:0}
+  header,nav,.wrap,.modal,.toast{display:none!important}
+  #printArea{display:block;padding:10mm}
+  #printArea h1{text-align:center;font-size:20px;margin-bottom:4px}
+  #printArea .sub{text-align:center;font-size:13px;margin-bottom:10px;color:#333}
+  #printArea table{width:100%;border-collapse:collapse;font-size:12px}
+  #printArea th,#printArea td{border:1px solid #444;padding:5px;text-align:right}
+  #printArea th{background:#eee}
+  #printArea tfoot td{font-weight:bold;background:#f5f5f5}
+  #printArea .foot{margin-top:10px;font-size:11px;text-align:center;color:#555}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <img src="icon.png" alt=""><div><h1>سجل الفواتح IBRA</h1>
+  <p id="curEventLbl">لا توجد فاتحة محددة</p></div>
+</header>
+
+<div class="wrap">
+
+  <!-- السجل -->
+  <section class="tab on" id="t-list">
+    <div class="stats">
+      <div class="stat"><b id="sCount">0</b><small>عدد المسجلين</small></div>
+      <div class="stat"><b id="sTotal">0</b><small>مجموع المبالغ (د.ع)</small></div>
+      <div class="stat"><b id="sDone">0</b><small>تم رد الجميل</small></div>
+      <div class="stat"><b id="sWait">0</b><small>بانتظار الرد</small></div>
+    </div>
+    <div class="card">
+      <div class="row">
+        <div><input id="q" placeholder="🔍 بحث بالاسم، الرقم، القرابة، المنطقة..." oninput="renderList()"></div>
+        <div style="max-width:170px"><select id="fState" onchange="renderList()">
+          <option value="">الكل</option><option value="wait">بانتظار الرد</option><option value="done">تم الرد</option>
+        </select></div>
+        <div style="max-width:170px"><select id="fScope" onchange="renderList()">
+          <option value="cur">الفاتحة الحالية</option><option value="all">كل الفواتح</option>
+        </select></div>
+      </div>
+      <div class="actions" style="margin-top:10px">
+        <button class="btn" onclick="openPerson()">➕ تسجيل شخص</button>
+        <button class="btn sec" onclick="printList()">🖨️ طباعة السجل</button>
+        <button class="btn sec" onclick="pdfList()">📄 حفظ PDF</button>
+      </div>
+    </div>
+    <div id="list"></div>
+  </section>
+
+  <!-- الفواتح -->
+  <section class="tab" id="t-events">
+    <div class="card">
+      <h2>إضافة فاتحة جديدة</h2>
+      <div class="row mb">
+        <div><label>اسم المرحوم / المرحومة</label><input id="eName" placeholder="مثال: المرحوم الحاج علي حسين"></div>
+        <div><label>تاريخ الفاتحة</label><input id="eDate" type="date"></div>
+      </div>
+      <div class="mb"><label>المكان (اختياري)</label><input id="ePlace" placeholder="جامع / حسينية / بيت..."></div>
+      <button class="btn" onclick="addEvent()">➕ إضافة الفاتحة</button>
+    </div>
+    <h2>الفواتح المسجلة</h2>
+    <div id="events"></div>
+  </section>
+
+  <!-- رد الجميل -->
+  <section class="tab" id="t-return">
+    <div class="card">
+      <h2>🤝 رد الجميل</h2>
+      <p style="color:var(--muted);font-size:13px;margin-bottom:10px">عندما يصير عند شخص فاتحة أو مناسبة، ابحث عن اسمه لتعرف ماذا قدّم لكم ومتى، ثم سجّل ردّك للجميل.</p>
+      <input id="rq" placeholder="🔍 اكتب اسم الشخص أو رقمه..." oninput="renderReturn()">
+    </div>
+    <div id="retList"></div>
+  </section>
+
+  <!-- الإعدادات -->
+  <section class="tab" id="t-settings">
+    <div class="card">
+      <h2>💾 النسخ الاحتياطي</h2>
+      <p style="color:var(--muted);font-size:13px;margin-bottom:10px">البيانات محفوظة على هذا الجهاز فقط. خذ نسخة احتياطية دائماً، وانقلها بين الحاسبة والموبايل بالاستيراد.</p>
+      <div class="actions">
+        <button class="btn" onclick="exportJSON()">⬇️ تصدير نسخة احتياطية</button>
+        <button class="btn sec" onclick="document.getElementById('imp').click()">⬆️ استيراد نسخة</button>
+        <button class="btn sec" onclick="exportCSV()">📊 تصدير Excel (CSV)</button>
+        <input type="file" id="imp" accept=".json" style="display:none" onchange="importJSON(event)">
+      </div>
+    </div>
+    <div class="card">
+      <h2>🏷️ اسم العائلة في الطباعة</h2>
+      <input id="familyName" placeholder="مثال: آل الخزرجي" onchange="saveFamily()">
+    </div>
+    <div class="card">
+      <h2>🔄 نقل البيانات بين الأجهزة</h2>
+      <p style="font-size:13px;color:var(--muted);line-height:1.9">
+        صدّر نسخة احتياطية من جهاز، وأرسلها لنفسك (واتساب/بلوتوث)، ثم استوردها بالجهاز الثاني واختر "دمج".
+      </p>
+    </div>
+    <div class="card">
+      <h2>⚠️ منطقة الخطر</h2>
+      <button class="btn red" onclick="wipeAll()">🗑️ حذف كل البيانات</button>
+    </div>
+    <div class="card">
+      <h2>ℹ️ حول</h2>
+      <p style="line-height:2">
+        <b>سجل الفواتح IBRA</b> — لتسجيل أهل الفضل ورد الجميل · الإصدار 1.0.0<br>
+        برمجة وتطوير ابراهيم الخزرجي<br>
+        🌐 موقع تطبيقاتي: <a class="link" href="https://ibraprogram.netlify.app/" target="_blank">ibraprogram.netlify.app</a><br>
+        ✈️ تليكرام: <a class="link" href="https://t.me/ibraprogram" target="_blank">t.me/ibraprogram</a><br>
+        🎵 تيك توك: <a class="link" href="https://www.tiktok.com/@ibraprogram" target="_blank">ibraprogram</a>
+      </p>
+    </div>
+  </section>
+</div>
+
+<nav>
+  <button class="on" data-t="list" onclick="go('list',this)"><span>📋</span>السجل</button>
+  <button data-t="events" onclick="go('events',this)"><span>🕊️</span>الفواتح</button>
+  <button data-t="return" onclick="go('return',this)"><span>🤝</span>رد الجميل</button>
+  <button data-t="settings" onclick="go('settings',this)"><span>⚙️</span>الإعدادات</button>
+</nav>
+
+<!-- نافذة الشخص -->
+<div class="modal" id="mPerson">
+  <div class="sheet">
+    <h2><span id="mTitle">تسجيل شخص</span><button class="x" onclick="closeM('mPerson')">×</button></h2>
+    <input type="hidden" id="pId">
+    <div class="mb"><label>الفاتحة</label><select id="pEvent"></select></div>
+    <div class="mb"><label>الاسم الكامل *</label><input id="pName" placeholder="الاسم الثلاثي"></div>
+    <div class="row mb">
+      <div><label>رقم الموبايل</label><input id="pPhone" type="tel" inputmode="tel" placeholder="07xxxxxxxxx"></div>
+      <div><label>المبلغ (د.ع)</label><input id="pAmount" type="text" inputmode="numeric" placeholder="25000" oninput="fmtInput(this)"></div>
+    </div>
+    <div class="row mb">
+      <div><label>نوع الفضل</label><select id="pKind">
+        <option>مبلغ مالي</option><option>حضور وعزاء</option><option>ذبيحة / طعام</option><option>خدمة ومساعدة</option><option>قراءة / ختمة</option><option>أخرى</option>
+      </select></div>
+      <div><label>المنطقة / المحافظة</label><input id="pArea" placeholder="بغداد الجديدة"></div>
+    </div>
+    <div class="mb"><label>القرابة / التعريف</label><input id="pRel" placeholder="مثال: قريب فلان، صديق أبو علي، جار..."></div>
+    <div class="mb"><label>ملاحظات</label><textarea id="pNotes"></textarea></div>
+    <div class="mb"><label>تاريخ التسجيل</label><input id="pDate" type="date"></div>
+    <div class="actions">
+      <button class="btn" onclick="savePerson()">💾 حفظ</button>
+      <button class="btn sec" onclick="savePerson(true)">💾 حفظ وإضافة آخر</button>
+    </div>
+  </div>
+</div>
+
+<!-- نافذة رد الجميل -->
+<div class="modal" id="mReturn">
+  <div class="sheet">
+    <h2><span>🤝 تسجيل رد الجميل</span><button class="x" onclick="closeM('mReturn')">×</button></h2>
+    <input type="hidden" id="rId">
+    <p id="rWho" style="margin-bottom:10px;color:var(--gold)"></p>
+    <div class="row mb">
+      <div><label>المبلغ الذي قدمته (د.ع)</label><input id="rAmount" inputmode="numeric" oninput="fmtInput(this)"></div>
+      <div><label>التاريخ</label><input id="rDate" type="date"></div>
+    </div>
+    <div class="mb"><label>المناسبة / ملاحظة</label><input id="rNote" placeholder="فاتحة والده، زواج ابنه..."></div>
+    <div class="actions">
+      <button class="btn grn" onclick="saveReturn()">✔️ تم رد الجميل</button>
+      <button class="btn sec" onclick="undoReturn()">↩️ إلغاء الرد</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<div id="printArea"></div>
+<div id="pdfStage"></div>
+<script src="lib/html2canvas.min.js"></script>
+<script src="lib/jspdf.umd.min.js"></script>
+
+<script>
+const KEY='fawateh_db_v1';
+let db={events:[],people:[],cur:null,family:''};
+const Cap=window.Capacitor, isNative=!!(Cap&&Cap.isNativePlatform&&Cap.isNativePlatform());
+const Plug=n=>Cap&&Cap.Plugins?Cap.Plugins[n]:null;
+function load(){try{const d=JSON.parse(localStorage.getItem(KEY));if(d)db=Object.assign(db,d)}catch(e){}}
+async function loadNative(){ // نسخة ثانية محفوظة بذاكرة التطبيق حتى لا تضيع البيانات
+  if(!isNative||!Plug('Preferences'))return;
+  try{const r=await Plug('Preferences').get({key:KEY});
+    if(r&&r.value){const d=JSON.parse(r.value);if((d.people||[]).length>=db.people.length&&(d.events||[]).length>=db.events.length){db=Object.assign(db,d);render()}}
+  }catch(e){}}
+function save(){const j=JSON.stringify(db);try{localStorage.setItem(KEY,j)}catch(e){toast('تعذّر الحفظ!')}
+  if(isNative&&Plug('Preferences'))Plug('Preferences').set({key:KEY,value:j}).catch(()=>{})}
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+const today=()=>new Date().toISOString().slice(0,10);
+const num=v=>parseInt(String(v||'').replace(/[^\d]/g,''))||0;
+const fmt=n=>(n||0).toLocaleString('en-US');
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function fmtInput(el){const n=num(el.value);el.value=n?fmt(n):''}
+function toast(t){const e=document.getElementById('toast');e.textContent=t;e.style.display='block';clearTimeout(e._t);e._t=setTimeout(()=>e.style.display='none',2000)}
+const ev=id=>db.events.find(e=>e.id===id);
+
+function go(t,b){document.querySelectorAll('.tab').forEach(x=>x.classList.remove('on'));document.getElementById('t-'+t).classList.add('on');
+  document.querySelectorAll('nav button').forEach(x=>x.classList.remove('on'));b.classList.add('on');render()}
+function closeM(id){document.getElementById(id).classList.remove('on')}
+
+/* الفواتح */
+function addEvent(){
+  const name=document.getElementById('eName').value.trim();
+  if(!name)return toast('اكتب اسم المرحوم');
+  const e={id:uid(),name,date:document.getElementById('eDate').value||today(),place:document.getElementById('ePlace').value.trim()};
+  db.events.unshift(e);db.cur=e.id;save();
+  ['eName','eDate','ePlace'].forEach(i=>document.getElementById(i).value='');
+  toast('تمت إضافة الفاتحة');render();
+}
+function setCur(id){db.cur=id;save();toast('تم اختيار الفاتحة');go('list',document.querySelector('nav button[data-t=list]'))}
+function editEvent(id){const e=ev(id);const n=prompt('اسم المرحوم',e.name);if(n===null)return;e.name=n.trim()||e.name;
+  const p=prompt('المكان',e.place||'');if(p!==null)e.place=p.trim();save();render()}
+function delEvent(id){const c=db.people.filter(p=>p.eventId===id).length;
+  if(!confirm(`حذف الفاتحة و ${c} شخص مسجل فيها؟`))return;
+  db.events=db.events.filter(e=>e.id!==id);db.people=db.people.filter(p=>p.eventId!==id);
+  if(db.cur===id)db.cur=db.events[0]?.id||null;save();render()}
+function renderEvents(){
+  const box=document.getElementById('events');
+  if(!db.events.length){box.innerHTML='<div class="empty">لا توجد فواتح بعد</div>';return}
+  box.innerHTML=db.events.map(e=>{
+    const ps=db.people.filter(p=>p.eventId===e.id);const tot=ps.reduce((a,p)=>a+(p.amount||0),0);
+    return `<div class="card event-item ${e.id===db.cur?'cur':''}"><div><b>${esc(e.name)}</b>
+    <div style="font-size:12px;color:var(--muted)">📅 ${esc(e.date)} ${e.place?'· 📍 '+esc(e.place):''}</div>
+    <div style="font-size:12px;color:var(--muted)">👥 ${ps.length} شخص · 💰 ${fmt(tot)} د.ع</div></div>
+    <div class="actions" style="margin:0"><button class="btn sm" onclick="setCur('${e.id}')">${e.id===db.cur?'✔ الحالية':'اختيار'}</button>
+    <button class="btn sec sm" onclick="editEvent('${e.id}')">✏️</button><button class="btn red sm" onclick="delEvent('${e.id}')">🗑️</button></div></div>`}).join('');
+}
+
+/* الأشخاص */
+function fillEventSelect(sel){document.getElementById('pEvent').innerHTML=db.events.map(e=>`<option value="${e.id}" ${e.id===sel?'selected':''}>${esc(e.name)}</option>`).join('')}
+function openPerson(id){
+  if(!db.events.length){toast('أضف فاتحة أولاً');go('events',document.querySelector('nav button[data-t=events]'));return}
+  const p=id?db.people.find(x=>x.id===id):null;
+  document.getElementById('mTitle').textContent=p?'تعديل البيانات':'تسجيل شخص';
+  fillEventSelect(p?p.eventId:db.cur);
+  document.getElementById('pId').value=p?p.id:'';
+  document.getElementById('pName').value=p?p.name:'';
+  document.getElementById('pPhone').value=p?p.phone:'';
+  document.getElementById('pAmount').value=p&&p.amount?fmt(p.amount):'';
+  document.getElementById('pKind').value=p?p.kind:'مبلغ مالي';
+  document.getElementById('pArea').value=p?p.area:'';
+  document.getElementById('pRel').value=p?p.rel:'';
+  document.getElementById('pNotes').value=p?p.notes:'';
+  document.getElementById('pDate').value=p?p.date:today();
+  document.getElementById('mPerson').classList.add('on');
+  setTimeout(()=>document.getElementById('pName').focus(),100);
+}
+function savePerson(again){
+  const name=document.getElementById('pName').value.trim();
+  if(!name)return toast('اكتب الاسم');
+  const id=document.getElementById('pId').value;
+  const data={eventId:document.getElementById('pEvent').value,name,phone:document.getElementById('pPhone').value.trim(),
+    amount:num(document.getElementById('pAmount').value),kind:document.getElementById('pKind').value,
+    area:document.getElementById('pArea').value.trim(),rel:document.getElementById('pRel').value.trim(),
+    notes:document.getElementById('pNotes').value.trim(),date:document.getElementById('pDate').value||today()};
+  if(id){Object.assign(db.people.find(x=>x.id===id),data)}
+  else{
+    const dup=db.people.find(x=>x.phone&&x.phone===data.phone&&x.eventId===data.eventId);
+    if(dup&&!confirm('هذا الرقم مسجل مسبقاً في نفس الفاتحة. تسجيل مرة أخرى؟'))return;
+    db.people.unshift({id:uid(),...data,returned:false});
+  }
+  save();toast('تم الحفظ ✔');render();
+  if(again&&!id){['pId','pName','pPhone','pAmount','pArea','pRel','pNotes'].forEach(i=>document.getElementById(i).value='');document.getElementById('pName').focus()}
+  else closeM('mPerson');
+}
+function delPerson(id){if(!confirm('حذف هذا الشخص؟'))return;db.people=db.people.filter(p=>p.id!==id);save();render()}
+function waLink(phone){let p=String(phone).replace(/[^\d]/g,'');if(p.startsWith('0'))p='964'+p.slice(1);return 'https://wa.me/'+p}
+
+function personCard(p,showEvent){
+  const e=ev(p.eventId);
+  return `<div class="person"><div class="avatar">${esc(p.name.trim()[0]||'؟')}</div><div class="pinfo">
+  <div style="display:flex;justify-content:space-between;gap:8px"><h3>${esc(p.name)}</h3><span class="amt">${p.amount?fmt(p.amount)+' د.ع':''}</span></div>
+  <div class="meta">${p.rel?'👤 '+esc(p.rel)+' · ':''}${p.phone?'📞 '+esc(p.phone)+' · ':''}${p.area?'📍 '+esc(p.area):''}</div>
+  ${showEvent&&e?`<div class="meta">🕊️ ${esc(e.name)} · ${esc(p.date)}</div>`:''}
+  ${p.notes?`<div class="meta">📝 ${esc(p.notes)}</div>`:''}
+  <span class="tag">${esc(p.kind)}</span>${p.returned?`<span class="tag done">✔ رُدّ الجميل ${p.returnDate?'· '+esc(p.returnDate):''}${p.returnAmount?' · '+fmt(p.returnAmount)+' د.ع':''}</span>`:'<span class="tag wait">⏳ بانتظار الرد</span>'}
+  ${p.returned&&p.returnNote?`<div class="meta">🤝 ${esc(p.returnNote)}</div>`:''}
+  <div class="actions">
+    ${p.phone?`<a class="btn sec sm" href="tel:${esc(p.phone)}">📞 اتصال</a><a class="btn sec sm" href="${waLink(p.phone)}" target="_blank">💬 واتساب</a>`:''}
+    <button class="btn grn sm" onclick="openReturn('${p.id}')">🤝 رد الجميل</button>
+    <button class="btn sec sm" onclick="openPerson('${p.id}')">✏️</button>
+    <button class="btn red sm" onclick="delPerson('${p.id}')">🗑️</button>
+  </div></div></div>`;
+}
+function filtered(){
+  const q=document.getElementById('q').value.trim().toLowerCase();
+  const st=document.getElementById('fState').value,sc=document.getElementById('fScope').value;
+  return db.people.filter(p=>(sc==='all'||p.eventId===db.cur)
+    &&(!st||(st==='done'?p.returned:!p.returned))
+    &&(!q||[p.name,p.phone,p.rel,p.area,p.notes].join(' ').toLowerCase().includes(q)));
+}
+function renderList(){
+  const e=ev(db.cur);
+  document.getElementById('curEventLbl').textContent=e?`الفاتحة الحالية: ${e.name} — ${e.date}`:'لا توجد فاتحة محددة — أضف فاتحة من تبويب الفواتح';
+  const ps=filtered();const sc=document.getElementById('fScope').value;
+  document.getElementById('sCount').textContent=ps.length;
+  document.getElementById('sTotal').textContent=fmt(ps.reduce((a,p)=>a+(p.amount||0),0));
+  document.getElementById('sDone').textContent=ps.filter(p=>p.returned).length;
+  document.getElementById('sWait').textContent=ps.filter(p=>!p.returned).length;
+  document.getElementById('list').innerHTML=ps.length?ps.map(p=>personCard(p,sc==='all')).join(''):'<div class="empty">لا يوجد مسجلين — اضغط "تسجيل شخص"</div>';
+}
+
+/* رد الجميل */
+function openReturn(id){const p=db.people.find(x=>x.id===id);
+  document.getElementById('rId').value=id;
+  document.getElementById('rWho').textContent=`${p.name} — قدّم ${p.amount?fmt(p.amount)+' د.ع':p.kind}`;
+  document.getElementById('rAmount').value=p.returnAmount?fmt(p.returnAmount):(p.amount?fmt(p.amount):'');
+  document.getElementById('rDate').value=p.returnDate||today();
+  document.getElementById('rNote').value=p.returnNote||'';
+  document.getElementById('mReturn').classList.add('on')}
+function saveReturn(){const p=db.people.find(x=>x.id===document.getElementById('rId').value);
+  p.returned=true;p.returnAmount=num(document.getElementById('rAmount').value);p.returnDate=document.getElementById('rDate').value;
+  p.returnNote=document.getElementById('rNote').value.trim();save();closeM('mReturn');toast('جزاك الله خيراً ✔');render()}
+function undoReturn(){const p=db.people.find(x=>x.id===document.getElementById('rId').value);
+  p.returned=false;p.returnAmount=0;p.returnDate='';p.returnNote='';save();closeM('mReturn');render()}
+function renderReturn(){
+  const q=document.getElementById('rq').value.trim().toLowerCase();
+  const box=document.getElementById('retList');
+  if(!q){const w=db.people.filter(p=>!p.returned);
+    box.innerHTML=`<h2>⏳ بانتظار رد الجميل (${w.length})</h2>`+(w.length?w.map(p=>personCard(p,true)).join(''):'<div class="empty">ما شاء الله، تم رد الجميل للجميع</div>');return}
+  const ps=db.people.filter(p=>[p.name,p.phone,p.rel].join(' ').toLowerCase().includes(q));
+  const tot=ps.reduce((a,p)=>a+(p.amount||0),0);
+  box.innerHTML=ps.length?`<div class="card">وُجد <b>${ps.length}</b> سجل · مجموع ما قدّم: <b style="color:var(--gold)">${fmt(tot)} د.ع</b></div>`+ps.map(p=>personCard(p,true)).join(''):'<div class="empty">لا توجد نتائج</div>';
+}
+
+/* الطباعة */
+function buildPrint(){
+  const ps=filtered();if(!ps.length){toast('لا يوجد مسجلين بهذا العرض');return false}
+  const sc=document.getElementById('fScope').value,e=ev(db.cur);
+  const tot=ps.reduce((a,p)=>a+(p.amount||0),0);
+  const title=sc==='all'?'سجل الفواتح — جميع الفواتح':`سجل فاتحة ${e?e.name:''}`;
+  document.getElementById('printArea').innerHTML=`
+  <h1>${esc(title)}</h1>
+  <div class="sub">${db.family?esc(db.family)+' · ':''}${sc!=='all'&&e?'📅 '+esc(e.date)+(e.place?' · '+esc(e.place):''):''} · عدد المسجلين: ${ps.length}</div>
+  <table><thead><tr><th>#</th><th>الاسم</th><th>القرابة / التعريف</th><th>الموبايل</th><th>المنطقة</th><th>النوع</th><th>المبلغ</th>${sc==='all'?'<th>الفاتحة</th>':''}<th>رد الجميل</th></tr></thead>
+  <tbody>${ps.map((p,i)=>`<tr><td>${i+1}</td><td>${esc(p.name)}</td><td>${esc(p.rel)}</td><td>${esc(p.phone)}</td><td>${esc(p.area)}</td><td>${esc(p.kind)}</td><td>${p.amount?fmt(p.amount):''}</td>${sc==='all'?`<td>${esc(ev(p.eventId)?.name||'')}</td>`:''}<td>${p.returned?'✔ '+esc(p.returnDate||''):''}</td></tr>`).join('')}</tbody>
+  <tfoot><tr><td colspan="6">المجموع</td><td>${fmt(tot)} د.ع</td><td colspan="${sc==='all'?2:1}"></td></tr></tfoot></table>
+  <div class="foot">طُبع بتاريخ ${today()} · سجل الفواتح IBRA — برمجة وتطوير ابراهيم الخزرجي</div>`;
+  return true;
+}
+function printList(){if(isNative)return pdfList();if(buildPrint())setTimeout(()=>window.print(),150)}
+
+/* النسخ الاحتياطي */
+function blobToB64(b){return new Promise(r=>{const f=new FileReader();f.onload=()=>r(String(f.result).split(',')[1]);f.readAsDataURL(b)})}
+async function download(name,content,type){
+  const b=content instanceof Blob?content:new Blob([content],{type});
+  if(isNative&&Plug('Filesystem')&&Plug('Share')){
+    try{const data=await blobToB64(b);
+      const w=await Plug('Filesystem').writeFile({path:name,data,directory:'CACHE'});
+      await Plug('Share').share({title:name,files:[w.uri],dialogTitle:'حفظ / مشاركة'});return}
+    catch(e){if(String(e&&e.message||e).match(/cancel/i))return;toast('تعذّر الحفظ: '+(e.message||e));return}}
+  const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),3000)}
+async function makePDF(html,name){
+  const st=document.getElementById('pdfStage');st.innerHTML=html;
+  try{await document.fonts.ready;
+    const c=await html2canvas(st,{scale:2,backgroundColor:'#fff'});
+    const {jsPDF}=window.jspdf;const pdf=new jsPDF('p','mm','a4');
+    const pw=210,ph=297,ih=c.height*pw/c.width;let y=0;
+    const pageH=Math.floor(c.width*ph/pw);
+    for(let top=0,i=0;top<c.height;top+=pageH,i++){
+      const part=document.createElement('canvas');part.width=c.width;part.height=Math.min(pageH,c.height-top);
+      part.getContext('2d').drawImage(c,0,top,c.width,part.height,0,0,c.width,part.height);
+      if(i)pdf.addPage();pdf.addImage(part.toDataURL('image/jpeg',0.92),'JPEG',0,0,pw,part.height*pw/c.width);}
+    await download(name,pdf.output('blob'),'application/pdf');
+  }catch(e){toast('تعذّر إنشاء PDF')}finally{st.innerHTML=''}}
+function exportJSON(){download(`سجل-الفواتح-${today()}.json`,JSON.stringify(db,null,2),'application/json');toast('تم التصدير')}
+function importJSON(ev2){const f=ev2.target.files[0];if(!f)return;const r=new FileReader();
+  r.onload=()=>{try{const d=JSON.parse(r.result);if(!d.events||!d.people)throw 0;
+    const merge=db.people.length&&confirm('دمج مع البيانات الحالية؟\n(موافق = دمج، إلغاء = استبدال كامل)');
+    if(merge){const ids=new Set(db.events.map(e=>e.id));d.events.forEach(e=>{if(!ids.has(e.id))db.events.push(e)});
+      const pids=new Set(db.people.map(p=>p.id));d.people.forEach(p=>{if(!pids.has(p.id))db.people.push(p)})}
+    else db=Object.assign({events:[],people:[],cur:null,family:''},d);
+    if(!ev(db.cur))db.cur=db.events[0]?.id||null;save();render();toast('تم الاستيراد ✔')}catch(e){toast('ملف غير صالح')}};
+  r.readAsText(f);ev2.target.value=''}
+function exportCSV(){const rows=[['الفاتحة','الاسم','القرابة','الموبايل','المنطقة','النوع','المبلغ','التاريخ','ملاحظات','رد الجميل','مبلغ الرد','تاريخ الرد']];
+  db.people.forEach(p=>rows.push([ev(p.eventId)?.name||'',p.name,p.rel,p.phone,p.area,p.kind,p.amount,p.date,p.notes,p.returned?'نعم':'لا',p.returnAmount||'',p.returnDate||'']));
+  download(`سجل-الفواتح-${today()}.csv`,'\ufeff'+rows.map(r=>r.map(c=>`"${String(c??'').replace(/"/g,'""')}"`).join(',')).join('\n'),'text/csv');toast('تم التصدير')}
+function saveFamily(){db.family=document.getElementById('familyName').value.trim();save();toast('تم الحفظ')}
+function wipeAll(){if(!confirm('حذف كل الفواتح والسجلات نهائياً؟'))return;if(!confirm('متأكد؟ لا يمكن التراجع'))return;
+  db={events:[],people:[],cur:null,family:''};save();render()}
+
+function pdfList(){if(!buildPrint())return;toast('جاري تجهيز ملف PDF...');makePDF(document.getElementById('printArea').innerHTML,`سجل-الفواتح-${today()}.pdf`)}
+function render(){renderList();renderEvents();renderReturn();document.getElementById('familyName').value=db.family||''}
+document.querySelectorAll('.modal').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('on')}));
+load();render();loadNative();
+if(isNative&&Plug('App'))Plug('App').addListener('backButton',()=>{const m=document.querySelector('.modal.on');if(m){m.classList.remove('on');return}
+  const t=document.querySelector('.tab.on');if(t&&t.id!=='t-list'){go('list',document.querySelector('nav button[data-t=list]'));return}Plug('App').exitApp()});
+</script>
+</body>
+</html>

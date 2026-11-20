@@ -1,0 +1,105 @@
+name: Build سجل الفواتح IBRA
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  windows:
+    name: Windows EXE
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: npm install
+      - run: npm run dist:win
+        env: { GH_TOKEN: "${{ secrets.GITHUB_TOKEN }}" }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows
+          path: dist/*.exe
+
+  android:
+    name: Android APK
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: 21 }
+      - run: npm install
+      - run: npm run android
+      - name: Build release APK
+        working-directory: android
+        run: chmod +x gradlew && ./gradlew assembleRelease --no-daemon
+      - name: Sign APK
+        run: |
+          VER=$(npm pkg get version | tr -d '"')
+          BT=$(ls -d $ANDROID_HOME/build-tools/* | sort -V | tail -1)
+          IN=android/app/build/outputs/apk/release/app-release-unsigned.apk
+          mkdir -p out
+          $BT/zipalign -p -f 4 $IN out/aligned.apk
+          $BT/apksigner sign --ks keystore/fawateh.jks --ks-key-alias fawateh \
+            --ks-pass pass:ibra2026fawateh --key-pass pass:ibra2026fawateh \
+            --out out/IBRA-Fawateh-$VER.apk out/aligned.apk
+          $BT/apksigner verify out/IBRA-Fawateh-$VER.apk
+          rm out/aligned.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android
+          path: out/*.apk
+
+  ios:
+    name: iPhone IPA (unsigned)
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: npm install
+      - run: npm run ios
+      - name: Build unsigned IPA
+        run: |
+          VER=$(npm pkg get version | tr -d '"')
+          cd ios/App
+          if [ -d App.xcworkspace ]; then SRC="-workspace App.xcworkspace"; else SRC="-project App.xcodeproj"; fi
+          xcodebuild $SRC -scheme App -configuration Release -sdk iphoneos \
+            -destination 'generic/platform=iOS' -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" build
+          APP=$(find build/Build/Products/Release-iphoneos -maxdepth 1 -name "*.app" | head -1)
+          mkdir -p Payload && cp -R "$APP" Payload/
+          mkdir -p $GITHUB_WORKSPACE/out
+          zip -qry $GITHUB_WORKSPACE/out/IBRA-Fawateh-$VER-unsigned.ipa Payload
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ios
+          path: out/*.ipa
+
+  release:
+    name: Publish Release
+    needs: [windows, android, ios]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with: { path: files, merge-multiple: true }
+      - id: v
+        run: echo "ver=$(npm pkg get version | tr -d '\"')" >> $GITHUB_OUTPUT
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.v.outputs.ver }}
+          name: سجل الفواتح IBRA v${{ steps.v.outputs.ver }}
+          body: |
+            **سجل الفواتح IBRA** — تسجيل أهل الفضل والمبالغ ورد الجميل.
+            - 🪟 الحاسبة: ملف Setup للتنصيب، أو portable يشتغل بدون تنصيب
+            - 🤖 أندرويد: ملف APK
+            - 🍎 آيفون: ملف IPA غير موقّع — وقّعه بشهادتك وثبّته
+            برمجة وتطوير ابراهيم الخزرجي — https://ibraprogram.netlify.app/
+          files: files/*
+          make_latest: true
