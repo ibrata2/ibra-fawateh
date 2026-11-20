@@ -29,7 +29,7 @@
   "build": {
     "appId": "com.ibraprogram.fawateh",
     "productName": "سجل الفواتح IBRA",
-    "artifactName": "IBRA-Fawateh-${version}-${arch}-${target}.${ext}",
+    "artifactName": "IBRA-Fawateh-${version}-${arch}.${ext}",
     "directories": { "output": "dist" },
     "files": ["electron/**", "www/**", "package.json"],
     "win": {
@@ -38,6 +38,7 @@
     },
     "nsis": {
       "oneClick": false,
+      "artifactName": "IBRA-Fawateh-${version}-Setup.${ext}",
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,

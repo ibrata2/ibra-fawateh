@@ -37,7 +37,7 @@
 ## المنصات
 | المنصة | الملف |
 |---|---|
-| ويندوز | `IBRA-Fawateh-x.x.x-x64-nsis.exe` (تنصيب) و `-portable.exe` |
+| ويندوز | `IBRA-Fawateh-x.x.x-Setup.exe` (تنصيب) و `-portable.exe` |
 | أندرويد | `IBRA-Fawateh-x.x.x.apk` |
 | آيفون | `IBRA-Fawateh-x.x.x-unsigned.ipa` (يوقّع بالشهادة الشخصية) |
 
